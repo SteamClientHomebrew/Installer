@@ -1,5 +1,4 @@
 <div align="center" max-width="100px">
-<h3>Starlight, a Millennium Installer</h3>
 
 A simple standalone program which automates the installation, removal and maintenance of Millennium.
 
