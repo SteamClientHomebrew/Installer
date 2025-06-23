@@ -93,7 +93,9 @@ const void RenderOption(OptionProps props, int ContainerWidth, int ContainerHeig
         PushStyleColor(ImGuiCol_Border, ImVec4(currentClickedColor, currentClickedColor, currentClickedColor, 1.f));
     }
 
-    BeginChild(("##" + props.title + "Container").c_str(), ImVec2(ContainerWidth, ContainerHeight), true, ImGuiWindowFlags_NoScrollbar);
+    PushStyleVar(ImGuiStyleVar_ChildRounding, ScaleX(12.0f));
+    PushStyleVar(ImGuiStyleVar_ChildRounding, ScaleX(12.0f));
+    BeginChild(("##" + props.title + "Container").c_str(), ImVec2(ContainerWidth, ContainerHeight), ImGuiChildFlags_Border, ImGuiWindowFlags_NoScrollbar);
     {
         PushFont(io.Fonts->Fonts[1]);
         Text("%s", props.title.c_str());
@@ -105,6 +107,7 @@ const void RenderOption(OptionProps props, int ContainerWidth, int ContainerHeig
         PopStyleColor();
     }
     EndChild();
+    PopStyleVar(2);
 
     if (state.isHovered || currentClickedColor != hoverColor)
     {

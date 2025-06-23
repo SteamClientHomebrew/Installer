@@ -36,18 +36,19 @@
 #include <vector>
 #include <iostream>
 #include <imgui.h>
+#include <SDL_render.h>
 
-GLuint logoTexture;
-GLuint infoIconTexture;
-GLuint closeButtonTexture;
-GLuint discordIconTexture;
-GLuint gtihubIconTexture;
-GLuint backBtnTexture;
-GLuint excludedIconTexture;
-GLuint errorIconTexture;
-GLuint successIconTexture;
+SDL_Texture* logoTexture;
+SDL_Texture* infoIconTexture;
+SDL_Texture* closeButtonTexture;
+SDL_Texture* discordIconTexture;
+SDL_Texture* gtihubIconTexture;
+SDL_Texture* backBtnTexture;
+SDL_Texture* excludedIconTexture;
+SDL_Texture* errorIconTexture;
+SDL_Texture* successIconTexture;
 
-bool LoadTextureFromMemory(const void* data, size_t data_size, GLuint* out_texture, int* out_width, int* out_height)
+bool LoadTextureFromMemory(SDL_Renderer* renderer, const void* data, size_t data_size, SDL_Texture** out_texture)
 {
     int image_width = 0;
     int image_height = 0;
@@ -56,38 +57,49 @@ bool LoadTextureFromMemory(const void* data, size_t data_size, GLuint* out_textu
     {
         return false;
     }
-
-    GLuint image_texture;
-    glGenTextures(1, &image_texture);
-    glBindTexture(GL_TEXTURE_2D, image_texture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image_width, image_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image_data);
+    
+    // Create SDL surface from image data
+    SDL_Surface* surface = SDL_CreateRGBSurfaceWithFormatFrom(
+        image_data,
+        image_width,
+        image_height,
+        32,
+        image_width * 4,
+        SDL_PIXELFORMAT_RGBA32
+    );
+    
+    if (surface == NULL)
+    {
+        stbi_image_free(image_data);
+        return false;
+    }
+    
+    // Create texture from surface
+    SDL_Texture* image_texture = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_FreeSurface(surface);
     stbi_image_free(image_data);
-
+    
+    if (image_texture == NULL)
+    {
+        return false;
+    }
+    
+    // Set blend mode for proper alpha handling
+    SDL_SetTextureBlendMode(image_texture, SDL_BLENDMODE_BLEND);
+    
     *out_texture = image_texture;
-    if (out_width)
-    {
-        *out_width = image_width;
-    }
-
-    if (out_height)
-    {
-        *out_height = image_height;
-    }
     return true;
 }
 
-void LoadTextures()
+void LoadTextures(SDL_Renderer* renderer)
 {
-    LoadTextureFromMemory(logo, sizeof(logo), &logoTexture);
-    LoadTextureFromMemory(infoIcon, sizeof(infoIcon), &infoIconTexture);
-    LoadTextureFromMemory(closeBtn, sizeof(closeBtn), &closeButtonTexture);
-    LoadTextureFromMemory(discordIcon, sizeof(discordIcon), &discordIconTexture);
-    LoadTextureFromMemory(githubIcon, sizeof(githubIcon), &gtihubIconTexture);
-    LoadTextureFromMemory(backBtn, sizeof(backBtn), &backBtnTexture);
-    LoadTextureFromMemory(excludedIcon, sizeof(excludedIcon), &excludedIconTexture);
-    LoadTextureFromMemory(errorIcon, sizeof(errorIcon), &errorIconTexture);
-    LoadTextureFromMemory(successIcon, sizeof(successIcon), &successIconTexture);
+    LoadTextureFromMemory(renderer, logo, sizeof(logo), &logoTexture);
+    LoadTextureFromMemory(renderer, infoIcon, sizeof(infoIcon), &infoIconTexture);
+    LoadTextureFromMemory(renderer, closeBtn, sizeof(closeBtn), &closeButtonTexture);
+    LoadTextureFromMemory(renderer, discordIcon, sizeof(discordIcon), &discordIconTexture);
+    LoadTextureFromMemory(renderer, githubIcon, sizeof(githubIcon), &gtihubIconTexture);
+    LoadTextureFromMemory(renderer, backBtn, sizeof(backBtn), &backBtnTexture);
+    LoadTextureFromMemory(renderer, excludedIcon, sizeof(excludedIcon), &excludedIconTexture);
+    LoadTextureFromMemory(renderer, errorIcon, sizeof(errorIcon), &errorIconTexture);
+    LoadTextureFromMemory(renderer, successIcon, sizeof(successIcon), &successIconTexture);
 }

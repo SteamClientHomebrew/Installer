@@ -30,14 +30,15 @@
 
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <wndproc.h>
-#include <GLFW/glfw3native.h>
 #include <iostream>
 #include <renderer.h>
 #include <dpi.h>
+#include <SDL_syswm.h>
+#include <SDL.h>
 
 WNDPROC g_OriginalWindProcCallback;
 bool    isTitleBarHovered = false;
-GLFWwindow* window;
+SDL_Window* window;
 std::shared_ptr<RouterNav> g_routerPtr;
 
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -46,14 +47,14 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     {
         case WM_NCCALCSIZE:
         {
-            if (wParam && lParam)
-            {
-                NCCALCSIZE_PARAMS* pParams = reinterpret_cast<NCCALCSIZE_PARAMS*>(lParam);
-                pParams->rgrc[0].top += 1;
-                pParams->rgrc[0].right -= 1;
-                pParams->rgrc[0].bottom -= 1;
-                pParams->rgrc[0].left += 1;
-            }
+            // if (wParam && lParam)
+            // {
+            //     NCCALCSIZE_PARAMS* pParams = reinterpret_cast<NCCALCSIZE_PARAMS*>(lParam);
+            //     pParams->rgrc[0].top += 1;
+            //     pParams->rgrc[0].right -= 1;
+            //     pParams->rgrc[0].bottom -= 1;
+            //     pParams->rgrc[0].left += 1;
+            // }
             return 0;
         }
         case WM_NCHITTEST:
@@ -88,19 +89,41 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     return CallWindowProc(g_OriginalWindProcCallback, hWnd, uMsg, wParam, lParam);
 }
 
-void SetBorderlessWindowStyle(GLFWwindow* window, std::shared_ptr<RouterNav> router)
+void SetBorderlessWindowStyle(SDL_Window* window, std::shared_ptr<RouterNav> router)
 {
     ::window = window;
     ::g_routerPtr = router;
 
-    HWND hWnd = glfwGetWin32Window(window);
+    HWND hWnd;
 
+    SDL_SysWMinfo wmInfo;
+    SDL_VERSION(&wmInfo.version);
+    
+    if (SDL_GetWindowWMInfo(window, &wmInfo)) {
+        if (wmInfo.subsystem == SDL_SYSWM_WINDOWS) {
+            hWnd = wmInfo.info.win.window; 
+        }
+    }
+
+    // Get current window position and size
     RECT windowRect;
     GetWindowRect(hWnd, &windowRect);
     int width  = windowRect.right - windowRect.left;
     int height = windowRect.bottom - windowRect.top;
+    int x = windowRect.left;
+    int y = windowRect.top;
 
+    // Store original window proc before making changes
     g_OriginalWindProcCallback = (WNDPROC)GetWindowLongPtr(hWnd, GWLP_WNDPROC);
+    
+    // Remove caption bar and borders by modifying window style
+    LONG_PTR style = GetWindowLongPtr(hWnd, GWL_STYLE);
+    style &= ~(WS_CAPTION | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SYSMENU);
+    SetWindowLongPtr(hWnd, GWL_STYLE, style);
+    
+    // Set custom window proc
     SetWindowLongPtr(hWnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(WindowProc));
-    SetWindowPos(hWnd, NULL, 0, 0, width, height, SWP_FRAMECHANGED | SWP_NOMOVE);
+    
+    // Apply the style changes without using SWP_FRAMECHANGED
+    SetWindowPos(hWnd, NULL, x, y, width, height, SWP_NOZORDER | SWP_NOACTIVATE);
 }

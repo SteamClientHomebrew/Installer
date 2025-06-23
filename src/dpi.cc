@@ -31,19 +31,30 @@
 #include <dpi.h>
 #include <iostream>
 #include <math.h>
+#include <SDL.h>
 
 float XDPI = 1.0f;
 float YDPI = 1.0f;
 
-void SetupDPI(GLFWwindow* window)
+void SetupDPI(SDL_Window* window)
 {
     if (!window)
     {
         return;
     }
 
-    glfwGetWindowContentScale(window, &XDPI, &YDPI);
-    std::cout << "DPI Scale: " << XDPI << ", " << YDPI << std::endl;
+    int displayIndex = SDL_GetWindowDisplayIndex(window);
+    float ddpi = 0.0f, hdpi = 0.0f, vdpi = 0.0f;
+    if (SDL_GetDisplayDPI(displayIndex, &ddpi, &hdpi, &vdpi) == 0) {
+        // Assume 96 DPI is the baseline (typical Windows default)
+        XDPI = hdpi / 96.0f;
+        YDPI = vdpi / 96.0f;
+        std::cout << "DPI Scale: " << XDPI << ", " << YDPI << std::endl;
+    } else {
+        std::cerr << "SDL_GetDisplayDPI failed: " << SDL_GetError() << std::endl;
+        XDPI = 1.0f;
+        YDPI = 1.0f;
+    }
 }
 
 /**

@@ -29,17 +29,17 @@
  */
 
 #pragma once
-#include <GL/gl.h>
+#include <SDL.h>
 
-extern GLuint logoTexture;
-extern GLuint infoIconTexture;
-extern GLuint closeButtonTexture;
-extern GLuint discordIconTexture;
-extern GLuint gtihubIconTexture;
-extern GLuint backBtnTexture;
-extern GLuint excludedIconTexture;
-extern GLuint errorIconTexture;
-extern GLuint successIconTexture;
+extern SDL_Texture* logoTexture;
+extern SDL_Texture* infoIconTexture;
+extern SDL_Texture* closeButtonTexture;
+extern SDL_Texture* discordIconTexture;
+extern SDL_Texture* gtihubIconTexture;
+extern SDL_Texture* backBtnTexture;
+extern SDL_Texture* excludedIconTexture;
+extern SDL_Texture* errorIconTexture;
+extern SDL_Texture* successIconTexture;
 
-bool LoadTextureFromMemory(const void* data, size_t data_size, GLuint* out_texture, int* out_width = nullptr, int* out_height = nullptr);
-void LoadTextures();
+bool LoadTextureFromMemory(SDL_Renderer* renderer, const void* data, size_t data_size, SDL_Texture** out_texture);
+void LoadTextures(SDL_Renderer* renderer);

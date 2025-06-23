@@ -55,8 +55,8 @@ set(SOURCES
     vendor/imgui/src/imgui_draw.cpp
     vendor/imgui/src/imgui_tables.cpp
     vendor/imgui/src/imgui_widgets.cpp
-    vendor/imgui/src/imgui_impl_glfw.cpp
-    vendor/imgui/src/imgui_impl_opengl3.cpp
+    vendor/imgui/src/imgui_impl_sdl2.cpp
+    vendor/imgui/src/imgui_impl_sdlrenderer2.cpp
     vendor/imgui/include/misc/freetype/imgui_freetype.cpp
     vendor/imgui/src/imgui_stdlib.cpp
 )
@@ -114,8 +114,7 @@ elseif(WIN32)
     message(STATUS "Building on Windows")
     find_package(Freetype REQUIRED)
     find_package(Stb REQUIRED)
-    find_package(glfw3 CONFIG REQUIRED)
-    find_package(glad CONFIG REQUIRED)
+    find_package(SDL2 CONFIG REQUIRED)
     find_package(CURL REQUIRED)
     find_package(unofficial-minizip CONFIG REQUIRED) # used for extracting zip files
 
@@ -123,10 +122,9 @@ elseif(WIN32)
     
     target_link_libraries(${PROJECT_NAME} PRIVATE
         Freetype::Freetype
-        glfw
+        SDL2::SDL2-static
         gdi32
         opengl32
-        glad::glad
         imm32
         CURL::libcurl
         dwmapi

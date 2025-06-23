@@ -28,12 +28,12 @@
  * SOFTWARE.
  */
 
-#include <GLFW/glfw3.h>
+#include <SDL.h>
 
 extern float XDPI;
 extern float YDPI;
 
-void SetupDPI(GLFWwindow* monitor);
+void SetupDPI(SDL_Window* monitor);
 
 float ScaleX(float x);
 float ScaleY(float y);

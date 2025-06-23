@@ -28,8 +28,8 @@
  * SOFTWARE.
  */
 
-#include <GLFW/glfw3.h>
 #include <memory>
 #include <router.h>
+#include <SDL.h>
 
-void RenderImGui(GLFWwindow* window, std::shared_ptr<RouterNav> router);
+void RenderImGui(SDL_Window* window, SDL_Renderer* renderer, std::shared_ptr<RouterNav> router);

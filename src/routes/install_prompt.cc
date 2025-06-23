@@ -120,29 +120,6 @@ void LinkCallback(ImGui::MarkdownLinkCallbackData data_)
     }
 }
 
-inline ImGui::MarkdownImageData ImageCallback(ImGui::MarkdownLinkCallbackData data_)
-{
-    // In your application you would load an image based on data_ input. Here we just use the imgui font texture.
-    ImTextureID image = ImGui::GetIO().Fonts->TexID;
-    // > C++14 can use ImGui::MarkdownImageData imageData{ true, false, image, ImVec2( 40.0f, 20.0f ) };
-    ImGui::MarkdownImageData imageData;
-    imageData.isValid =         true;
-    imageData.useLinkCallback = false;
-    imageData.user_texture_id = image;
-    imageData.size =            ImVec2( 40.0f, 20.0f );
-
-    // For image resize when available size.x > image width, add
-    ImVec2 const contentSize = ImGui::GetContentRegionAvail();
-    if(imageData.size.x > contentSize.x)
-    {
-        float const ratio = imageData.size.y/imageData.size.x;
-        imageData.size.x = contentSize.x;
-        imageData.size.y = contentSize.x*ratio;
-    }
-
-    return imageData;
-}
-
 void MarkdownFormatCallback(const MarkdownFormatInfo& markdownFormatInfo_, bool start_)
 {
     defaultMarkdownFormatCallback(markdownFormatInfo_, start_);        
@@ -196,7 +173,6 @@ void Markdown(std::string markdown_)
    
     mdConfig.linkCallback      = LinkCallback;
     mdConfig.tooltipCallback   = NULL;
-    mdConfig.imageCallback     = ImageCallback;
     mdConfig.headingFormats[0] = { io.Fonts->Fonts[1], true  };
     mdConfig.headingFormats[1] = { io.Fonts->Fonts[1], true  };
     mdConfig.headingFormats[2] = { io.Fonts->Fonts[1], false };
@@ -204,35 +180,6 @@ void Markdown(std::string markdown_)
     mdConfig.formatCallback    = MarkdownFormatCallback;
 
     ImGui::Markdown(markdown_.c_str(), markdown_.length(), mdConfig);
-}
-
-void SetUserSettings(std::string steamPath)
-{
-    const auto path = std::filesystem::path(steamPath) / "ext" / "millennium.ini";
-
-    if (!std::filesystem::exists(path))
-    {
-        std::filesystem::create_directories(path.parent_path());
-        std::ofstream outputFile(path.string());
-    }
-
-    try 
-    {
-        auto file = mINI::INIFile(path.string());
-        auto ini = mINI::INIStructure();
-
-        file.read(ini);
-        file.write(ini);
-
-        ini["Settings"]["check_for_updates"] = checkForUpdates->isChecked ? "yes" : "no";
-        ini["Settings"]["check_for_update_notify"] = automaticallyInstallUpdates->isChecked ? "no" : "yes";
-
-        file.write(ini);
-    }
-    catch (const std::exception& ex)
-    {
-        std::cerr << "Error writing to INI file: " << ex.what() << std::endl;
-    }
 }
 
 const void RenderInstallPrompt(std::shared_ptr<RouterNav> router, float xPos)
@@ -259,7 +206,7 @@ const void RenderInstallPrompt(std::shared_ptr<RouterNav> router, float xPos)
     SetCursorPos({ xPos + (viewport->Size.x - PromptContainerWidth) / 2, (viewport->Size.y - PromptContainerHeight) / 2 });
     PushStyleColor(ImGuiCol_Border, ImVec4(0.169f, 0.173f, 0.18f, 1.0f));
 
-    BeginChild("##PromptContainer", ImVec2(PromptContainerWidth, PromptContainerHeight), false);
+    BeginChild("##PromptContainer", ImVec2(PromptContainerWidth, PromptContainerHeight));
     {
         PushFont(io.Fonts->Fonts[1]);
         Text(fmt::format("Install Millennium {} ✨", releaseInfo["tag_name"].get<std::string>()).c_str());
@@ -406,21 +353,6 @@ const void RenderInstallPrompt(std::shared_ptr<RouterNav> router, float xPos)
         PushStyleColor(ImGuiCol_Text, ImVec4(0.422f, 0.425f, 0.441f, 1.0f));
         SetCursorPosY(GetCursorPosY() + ScaleY(30));
 
-        checkForUpdates = RenderCheckBox(
-            true, 
-            "Automatically check for updates", 
-            "With this enabled, Millennium will automatically check for updates.\nIf updates are found, you will be prompted to install them."
-        );
-
-        Spacing();
-
-        automaticallyInstallUpdates = RenderCheckBox(
-            true, 
-            "Automatically install found updates", 
-            "With this and the setting above enabled, you will NOT be prompted to\ninstall updates. They will be carried out automatically.",
-            !checkForUpdates->isChecked
-        );
-
         Spacing();
         Spacing();
         Spacing();
@@ -444,8 +376,6 @@ const void RenderInstallPrompt(std::shared_ptr<RouterNav> router, float xPos)
 
         if (Button("Install", ImVec2(xPos + GetContentRegionAvail().x, GetContentRegionAvail().y)))
         {
-            SetUserSettings(steamPath);
-
             std::thread(StartInstaller, steamPath, std::ref(releaseInfo), std::ref(osReleaseInfo)).detach();
             router->navigateNext();
         }
