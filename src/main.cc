@@ -70,6 +70,12 @@ const float TARGET_FRAME_TIME = 1.0f / TARGET_FPS;
 
 static void GLFWErrorCallback(int error, const char* description)
 {
+    if (error == GLFW_API_UNAVAILABLE) 
+    {
+        MessageBoxA(NULL, "OpenGL was not found on your system, and cannot proceed to render. Download mesa3d-25.1.3-release-mingw.7z from https://github.com/pal1000/mesa-dist-win/releases and placing it in the same directory as this installer exe.", "Error", MB_ICONERROR);
+        return;
+    }
+
     MessageBoxA(NULL, fmt::format("An error occurred.\n\nGLFW Error {}: {}", error, description).c_str(), "Whoops!", MB_ICONERROR);
 }
 
@@ -229,12 +235,13 @@ void RenderBlur( HWND hwnd )
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-    // Allocate console
-    // AllocConsole();
-    // FILE* file;
-    // freopen_s(&file, "CONOUT$", "w", stdout);
-    // freopen_s(&file, "CONOUT$", "w", stderr);
-    // std::cout << "Console allocated." << std::endl;
+    if (IsDebuggerPresent())
+    {
+        AllocConsole();
+        FILE* file;
+        freopen_s(&file, "CONOUT$", "w", stdout);
+        freopen_s(&file, "CONOUT$", "w", stderr);
+    }
 
     MMRESULT result = timeBeginPeriod(1);
 
@@ -242,7 +249,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         std::cerr << "Failed to set timer resolution to 1 ms" << std::endl;
         return 1;
     }
- 
+
     glfwSetErrorCallback(GLFWErrorCallback);
     if (!glfwInit())
     {
