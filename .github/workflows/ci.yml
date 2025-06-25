@@ -17,19 +17,7 @@ jobs:
       pull-requests: write
 
     runs-on: windows-latest
-
-    env:
-      ACTIONS_ALLOW_UNSECURE_COMMANDS: true
-      VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
-
     steps:
-      - name: Export GitHub Actions cache environment variables
-        uses: actions/github-script@v7
-        with:
-          script: |
-            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
-            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
-
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -54,33 +42,12 @@ jobs:
         uses: msys2/setup-msys2@v2
         with:
           msystem: mingw32
-          install: >-
-            mingw-w64-i686-libgcrypt
-            mingw-w64-i686-gcc
-            mingw-w64-i686-cmake
-            mingw-w64-i686-ninja
-            unzip
-
-      - name: (Dependency) Install vcpkg
-        shell: pwsh
-        run: ./vendor/vcpkg/bootstrap-vcpkg.bat && ./vendor/vcpkg/vcpkg integrate install
-
-      - name: (Generator) Configure CMake
-        shell: msys2 {0}
-        run: cmake --preset=release
-
-      - name: Install Node.js and npm
-        shell: msys2 {0}
-        run: |
-          curl -fsSL https://nodejs.org/dist/v16.20.0/node-v16.20.0-win-x86.zip -o node.zip
-          unzip node.zip -d /usr/local
-          export PATH="/usr/local/node-v16.20.0-win-x86:$PATH"
-          node --version
-          npm --version
+          install: mingw-w64-i686-libgcrypt mingw-w64-i686-gcc mingw-w64-i686-cmake mingw-w64-i686-ninja unzip
 
       - name: Build Millennium
         shell: msys2 {0}
         run: |
+          cmake --preset=release
           cmake --build build/release --config Release -- -j$(nproc)
           mkdir -p D:/a/build
           mv build/release/Installer.exe D:/a/build/MillenniumInstaller-Windows.exe
