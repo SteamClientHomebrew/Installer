@@ -1,5 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
-
+cmake_minimum_required(VERSION 3.50)
 # Set the project name and version
 project(Installer VERSION 1.0 LANGUAGES CXX)
 
@@ -115,7 +114,7 @@ elseif(WIN32)
     find_package(Freetype REQUIRED)
     find_package(Stb REQUIRED)
     find_package(glfw3 CONFIG REQUIRED)
-    find_package(glad CONFIG REQUIRED)
+    find_package(GLEW CONFIG REQUIRED)
     find_package(CURL REQUIRED)
     find_package(unofficial-minizip CONFIG REQUIRED) # used for extracting zip files
 
@@ -126,7 +125,7 @@ elseif(WIN32)
         glfw
         gdi32
         opengl32
-        glad::glad
+        GLEW::GLEW
         imm32
         CURL::libcurl
         dwmapi

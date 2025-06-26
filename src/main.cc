@@ -146,9 +146,9 @@ void FrameBufferSizeCallback(GLFWwindow* window, int width, int height)
 void SpawnRendererThread(GLFWwindow* window, const char* glsl_version, std::shared_ptr<RouterNav> router)
 {
     glfwMakeContextCurrent(window); 
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) 
+    if (glewInit() != GLEW_OK) 
     {
-        std::cerr << "Failed to initialize GLAD\n";
+        std::cerr << "Failed to initialize GLEW\n";
         return;
     }
 
