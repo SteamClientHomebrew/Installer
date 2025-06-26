@@ -1,3 +1,15 @@
+# [1.1.0](https://github.com/SteamClientHomebrew/Installer/compare/v1.0.5...v1.1.0) (2025-06-26)
+
+
+### Bug Fixes
+
+* update vcpkg baseline ([8aed3ed](https://github.com/SteamClientHomebrew/Installer/commit/8aed3edc663eb5e0fb78be2a4640b8d3b3be9328))
+
+
+### Features
+
+* Simplify installer modal, and improve GLFW error handling. ([45d7740](https://github.com/SteamClientHomebrew/Installer/commit/45d77406e36025e409e5025aaa942fe54428d4fb))
+
 ## [1.0.5](https://github.com/shdwmtr/starlight/compare/v1.0.4...v1.0.5) (2025-04-05)
 
 
