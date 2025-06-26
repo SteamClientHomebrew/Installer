@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/SteamClientHomebrew/Installer/compare/v1.1.0...v1.1.1) (2025-06-26)
+
+
+### Bug Fixes
+
+* more verbose opengl error message ([5469092](https://github.com/SteamClientHomebrew/Installer/commit/5469092d6d24abfd2c1f7ba138ed26cdce95144a))
+
 # [1.1.0](https://github.com/SteamClientHomebrew/Installer/compare/v1.0.5...v1.1.0) (2025-06-26)
 
 
