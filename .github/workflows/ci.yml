@@ -42,7 +42,7 @@ jobs:
         uses: msys2/setup-msys2@v2
         with:
           msystem: mingw32
-          install: mingw-w64-i686-libgcrypt mingw-w64-i686-gcc mingw-w64-i686-cmake=3.30.1 mingw-w64-i686-ninja unzip
+          install: mingw-w64-i686-libgcrypt mingw-w64-i686-gcc mingw-w64-i686-cmake mingw-w64-i686-ninja unzip
 
       - name: Build Millennium
         shell: msys2 {0}
