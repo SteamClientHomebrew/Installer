@@ -72,7 +72,10 @@ static void GLFWErrorCallback(int error, const char* description)
 {
     if (error == GLFW_API_UNAVAILABLE) 
     {
-        MessageBoxA(NULL, "OpenGL was not found on your system, and cannot proceed to render. Download mesa3d-25.1.3-release-mingw.7z from https://github.com/pal1000/mesa-dist-win/releases and placing it in the same directory as this installer exe.", "Error", MB_ICONERROR);
+        MessageBoxA(NULL, 
+            "Your system doesn't support hardware rendering, which is preventing the installer from displaying properly. "
+            "To resolve this issue, download the DLL files from \nhttps://github.com/SteamClientHomebrew/Installer/tree/main/vendor/mesa\n and place them in the same folder as the installer. This will enable software rendering as an alternative.\n\n"
+            "Please note: This is a system limitation, not an installer bug, so there's no need to report it to the development team.", "Error", MB_ICONERROR);
         return;
     }
 
