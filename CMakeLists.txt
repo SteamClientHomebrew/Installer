@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.5)
 
 # Set the project name and version
 project(Installer VERSION 1.0 LANGUAGES CXX)
