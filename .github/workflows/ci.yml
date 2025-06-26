@@ -47,8 +47,8 @@ jobs:
       - name: Build Millennium
         shell: msys2 {0}
         run: |
-          cmake --preset=release
-          cmake --build build/release --config Release -- -j$(nproc)
+          cmake --preset=release -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+          cmake --build build/release --config Release -- -j$(nproc) -DCMAKE_POLICY_VERSION_MINIMUM=3.5
           mkdir -p D:/a/build
           mv build/release/Installer.exe D:/a/build/MillenniumInstaller-Windows.exe
 
