@@ -61,7 +61,7 @@ nlohmann::json releaseInfo, osReleaseInfo;
 
 const bool FetchVersionInfo()
 {
-    const auto response = Http::Get("https://api.github.com/repos/shdwmtr/millennium/releases", false);
+    const auto response = Http::Get("https://api.github.com/repos/SteamClientHomebrew/Millennium/releases", false);
 
     if (response.empty())
     {

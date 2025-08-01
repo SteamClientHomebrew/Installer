@@ -332,52 +332,14 @@ const void RenderUninstallSelect(std::shared_ptr<RouterNav> router, float xPos)
     EndChild();
     PopStyleColor();
 
-    SetCursorPos({ xPos, viewport->Size.y - BottomNavBarHeight + 1 });
-
-    PushStyleVar  (ImGuiStyleVar_WindowPadding, ImVec2(ScaleX(30), ScaleY(30)));
-    PushStyleColor(ImGuiCol_Border, ImVec4(0.f, 0.f, 0.f, 0.f));
-    PushStyleVar  (ImGuiStyleVar_ChildRounding, 0.0f);
-    PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.078f, 0.082f, 0.09f, 1.0f));
-
-    BeginChild("##BottomNavBar", ImVec2(viewport->Size.x, BottomNavBarHeight), true, ImGuiWindowFlags_NoScrollbar);
+    RenderBottomNavBar("InstallPrompt", xPos, [router, xPos] 
     {
-        SetCursorPos({ ScaleX(45), GetCursorPosY() + ScaleY(12.5) });
-        Image((ImTextureID)(intptr_t)infoIconTexture, ImVec2(ScaleX(25), ScaleY(25)));
-
-        SameLine(0, ScaleX(42));
-        const float cursorPosSave = GetCursorPosX();
-
-        SetCursorPosY(GetCursorPosY() - ScaleX(12));
-        TextColored(ImVec4(0.322f, 0.325f, 0.341f, 1.0f), "Steam Homebrew & Millennium are not affiliated with");
-
-        SetCursorPos({ cursorPosSave, GetCursorPosY() - ScaleY(20) });
-        TextColored(ImVec4(0.322f, 0.325f, 0.341f, 1.0f), "Steam®, Valve, or any of their partners.");
-        
-        SameLine(0);
-        SetCursorPosY(GetCursorPosY() - ScaleY(25));
-
         static bool isButtonHovered = false;
         float currentColor = EaseInOutFloat("##NextButton", 1.0f, 0.8f, isButtonHovered, 0.3f);
 
         PushStyleColor(ImGuiCol_Button,        ImVec4(currentColor, currentColor, currentColor, 1.0f));
         PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(currentColor, currentColor, currentColor, 1.0f));
         PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.8f, 0.8f, 0.8f, 1.0f));
-        PushStyleColor(ImGuiCol_Text,          ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
-
-        const int FooterContainerWidth = ScaleX(300);
-        const float buttonPos = GetCursorPosY();
-
-        SetCursorPosX(xPos + GetCursorPosX() + GetContentRegionAvail().x - FooterContainerWidth);
-        SetCursorPosY(GetCursorPosY() + ScaleY(10));
-
-        Image((ImTextureID)(intptr_t)discordIconTexture, ImVec2(ScaleX(30), ScaleY(30)));
-        SameLine(0, ScaleX(25));
-        SetCursorPosY(GetCursorPosY() - ScaleY(15));
-
-        Image((ImTextureID)(intptr_t)gtihubIconTexture, ImVec2(ScaleX(30), ScaleY(30)));
-        SameLine(0, ScaleX(25));
-
-        SetCursorPosY(buttonPos);
 
         if (uninstallFinished)
         {
@@ -407,11 +369,7 @@ const void RenderUninstallSelect(std::shared_ptr<RouterNav> router, float xPos)
             SetMouseCursor(ImGuiMouseCursor_Hand);
         }
 
-        PopStyleColor(4);
+        PopStyleColor(3);
         isButtonHovered = IsItemHovered() || (IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem) && IsMouseDown(ImGuiMouseButton_Left));
-    }
-    EndChild();
-
-    PopStyleVar(2);
-    PopStyleColor(2);
+    });
 }

@@ -43,7 +43,7 @@
 using namespace ImGui;
 
 constexpr const char* discordInviteLink   = "https://steambrew.app/discord";
-constexpr const char* githubRepositoryUrl = "https://github.com/shdwmtr/millennium";
+constexpr const char* githubRepositoryUrl = "https://github.com/SteamClientHomebrew/Millennium";
 
 const void RenderBottomNavBar(const char* identifier, float xPos, std::function<void()> buttonRenderCallback)
 {
