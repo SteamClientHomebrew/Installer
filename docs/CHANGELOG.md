@@ -1,3 +1,10 @@
+## [1.1.2](https://github.com/SteamClientHomebrew/Installer/compare/v1.1.1...v1.1.2) (2025-08-01)
+
+
+### Bug Fixes
+
+* Fix bottom nav bar links not working on uninstall panel ([bdba1af](https://github.com/SteamClientHomebrew/Installer/commit/bdba1af40be7fef7df107410a0c416595891ed7c))
+
 ## [1.1.1](https://github.com/SteamClientHomebrew/Installer/compare/v1.1.0...v1.1.1) (2025-06-26)
 
 ### Bug Fixes
