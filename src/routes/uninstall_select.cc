@@ -1,24 +1,24 @@
 /**
  * ==================================================
- *   _____ _ _ _             _                     
- *  |     |_| | |___ ___ ___|_|_ _ _____           
- *  | | | | | | | -_|   |   | | | |     |          
- *  |_|_|_|_|_|_|___|_|_|_|_|_|___|_|_|_|          
- * 
+ *   _____ _ _ _             _
+ *  |     |_| | |___ ___ ___|_|_ _ _____
+ *  | | | | | | | -_|   |   | | | |     |
+ *  |_|_|_|_|_|_|___|_|_|_|_|_|___|_|_|_|
+ *
  * ==================================================
- * 
+ *
  * Copyright (c) 2025 Project Millennium
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -55,10 +55,10 @@ static std::filesystem::path steamPath;
 struct ComponentProps
 {
     float byteSize;
-    std::vector<std::string> pathList; 
+    std::vector<std::string> pathList;
 };
 
-bool isUninstalling = false; 
+bool isUninstalling = false;
 bool uninstallFinished = false;
 
 struct ComponentState
@@ -81,23 +81,23 @@ struct ComponentState
 
     UninstallState uninstallState;
 
-    ComponentState(bool hovered = false, bool selected = false) : isHovered(hovered), isSelected(selected) {}
+    ComponentState(bool hovered = false, bool selected = false) : isHovered(hovered), isSelected(selected)
+    {
+    }
 };
 
 ComponentProps MakeComponentProps(std::vector<std::filesystem::path> pathList)
 {
     uint64_t byteSize = 0;
 
-    for (const auto& path : pathList)
-    {
+    for (const auto& path : pathList) {
         std::error_code ec;
         byteSize += GetFolderSize(path, ec);
     }
 
     std::vector<std::string> pathListStr;
 
-    for (const auto& path : pathList)
-    {
+    for (const auto& path : pathList) {
         pathListStr.push_back(path.string());
     }
 
@@ -113,44 +113,40 @@ void InitializeUninstaller()
     isUninstalling = false;
     uninstallFinished = false;
 
-    uninstallComponents = 
-    {
-        { "Millennium",                 std::make_tuple(ComponentState({ false, true }), MakeComponentProps({ steamPath / "user32.dll", steamPath / "millennium.dll", steamPath / "python311.dll" }))},
-        { "Custom Steam Components",    std::make_tuple(ComponentState({ false, true }), MakeComponentProps({ steamPath / "ext" / "data" / "assets", steamPath / "ext" / "data" / "shims" }))},
-        { "Dependencies",               std::make_tuple(ComponentState({ false, true }), MakeComponentProps({ steamPath / "ext" / "data" / "cache" }))},
-        { "Themes",                     std::make_tuple(ComponentState({ false, true }), MakeComponentProps({ steamPath / "steamui" / "skins" }))},
-        { "Plugins",                    std::make_tuple(ComponentState({ false, true }), MakeComponentProps({ steamPath / "plugins" }))},
+    uninstallComponents = {
+        { "Millennium",
+         std::make_tuple(ComponentState({ false, true }),                             MakeComponentProps({ steamPath / "user32.dll", steamPath / "millennium.dll", steamPath / "python311.dll" })) },
+        { "Custom Steam Components",
+         std::make_tuple(ComponentState({ false, true }),                             MakeComponentProps({ steamPath / "ext" / "data" / "assets", steamPath / "ext" / "data" / "shims" }))         },
+        { "Dependencies",            std::make_tuple(ComponentState({ false, true }), MakeComponentProps({ steamPath / "ext" / "data" / "cache" }))                                                },
+        { "Themes",                  std::make_tuple(ComponentState({ false, true }), MakeComponentProps({ steamPath / "steamui" / "skins" }))                                                     },
+        { "Plugins",                 std::make_tuple(ComponentState({ false, true }), MakeComponentProps({ steamPath / "plugins" }))                                                               },
     };
 }
 
 void StartUninstall()
 {
     /** Render all selected components as uninstalling */
-    std::for_each(uninstallComponents.begin(), uninstallComponents.end(), [](auto& pair) 
+    std::for_each(uninstallComponents.begin(), uninstallComponents.end(), [](auto& pair)
     {
-        if (std::get<0>(pair.second).isSelected) std::get<0>(pair.second).uninstallState.state = ComponentState::UninstallState::Uninstalling;
+        if (std::get<0>(pair.second).isSelected)
+            std::get<0>(pair.second).uninstallState.state = ComponentState::UninstallState::Uninstalling;
     });
-    
+
     /** Simulate uninstalling process */
-    for (auto& componentPair : uninstallComponents)
-    {
+    for (auto& componentPair : uninstallComponents) {
         auto& [state, props] = componentPair.second;
-        if (state.isSelected)
-        {
+        if (state.isSelected) {
             std::this_thread::sleep_for(std::chrono::milliseconds(300));
 
-            for (const auto& path : props.pathList)
-            {
+            for (const auto& path : props.pathList) {
                 std::error_code ec;
                 std::filesystem::remove_all(path, ec); // Remove the path
-                if (ec) 
-                {
+                if (ec) {
                     state.uninstallState.state = ComponentState::UninstallState::Failed;
                     state.uninstallState.errorMessage = ec.message();
-                }
-                else 
-                {
-                    state.uninstallState.state = ComponentState::UninstallState::Success;   
+                } else {
+                    state.uninstallState.state = ComponentState::UninstallState::Success;
                 }
             }
         }
@@ -163,8 +159,7 @@ std::string GetReclaimedSpace()
 {
     uint64_t totalSize = 0;
 
-    for (auto& componentPair : uninstallComponents)
-    {
+    for (auto& componentPair : uninstallComponents) {
         const auto& [state, props] = componentPair.second;
         totalSize += state.isSelected ? props.byteSize : 0;
     }
@@ -174,8 +169,7 @@ std::string GetReclaimedSpace()
 
 const void RenderComponents()
 {
-    for (auto& componentPair : uninstallComponents)
-    {
+    for (auto& componentPair : uninstallComponents) {
         auto& component = componentPair.first;
         auto& [state, props] = componentPair.second;
 
@@ -183,31 +177,27 @@ const void RenderComponents()
 
         std::string strPathList;
 
-        for (const auto& path : props.pathList)
-        {
+        for (const auto& path : props.pathList) {
             strPathList += path + "\n";
         }
 
         std::string formattedComponent = component + ": " + BytesToReadableFormat(props.byteSize);
 
         BeginChild(component.c_str(), { ScaleX(35), ScaleY(35) }, false, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
-        { 
+        {
             /** Not currently uninstalling, the user is selecting components to be uninstalled */
-            if (!isUninstalling)
-            {
+            if (!isUninstalling) {
                 state.isSelected = RenderCheckBox(state.isSelected, formattedComponent.c_str(), strPathList.c_str(), false, true)->isChecked;
                 continue;
             }
 
             /** Item is excluded from the uninstaller */
-            if (!state.isSelected)
-            {
+            if (!state.isSelected) {
                 SetCursorPos({ GetCursorPosX() + ScaleX(2), GetCursorPosY() + ScaleY(2) });
                 Image((ImTextureID)(intptr_t)excludedIconTexture, { ScaleX(30), ScaleY(30) });
                 EndChild();
 
-                if (IsItemHovered())
-                {
+                if (IsItemHovered()) {
                     SetMouseCursor(ImGuiMouseCursor_Hand);
                     PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(ScaleX(10), ScaleY(10)));
                     PushStyleVar(ImGuiStyleVar_WindowRounding, 6);
@@ -227,12 +217,12 @@ const void RenderComponents()
             const float spinnerSize = ScaleX(10);
 
             /** Render the state of the uninstalling components */
-            switch (state.uninstallState.state)
-            {
+            switch (state.uninstallState.state) {
                 case ComponentState::UninstallState::Uninstalling:
                 {
                     SetCursorPos({ GetCursorPosX() + spinnerSize / 2, (GetCursorPosY() + spinnerSize / 2) - 5.f });
-                    Spinner<SpinnerTypeT::e_st_ang>("SpinnerAngNoBg", Radius{(spinnerSize)}, Thickness{(ScaleX(3))}, Color{ImColor(255, 255, 255, 255)}, BgColor{ImColor(255, 255, 255, 0)}, Speed{6}, Angle{IM_PI}, Mode{0});
+                    Spinner<SpinnerTypeT::e_st_ang>("SpinnerAngNoBg", Radius{ (spinnerSize) }, Thickness{ (ScaleX(3)) }, Color{ ImColor(255, 255, 255, 255) },
+                                                    BgColor{ ImColor(255, 255, 255, 0) }, Speed{ 6 }, Angle{ IM_PI }, Mode{ 0 });
                     EndChild();
                     SameLine(0, ScaleX(20));
                     SetCursorPosY(GetCursorPosY() + ScaleY(3));
@@ -241,7 +231,7 @@ const void RenderComponents()
                 }
                 case ComponentState::UninstallState::Success:
                 {
-                    SetCursorPos({ GetCursorPosX() + ScaleX(2), GetCursorPosY() + ScaleY(2)} );
+                    SetCursorPos({ GetCursorPosX() + ScaleX(2), GetCursorPosY() + ScaleY(2) });
                     Image((ImTextureID)(intptr_t)successIconTexture, { ScaleX(30), ScaleY(30) });
                     EndChild();
 
@@ -257,8 +247,7 @@ const void RenderComponents()
                     Image((ImTextureID)(intptr_t)errorIconTexture, ImVec2(ScaleX(30), ScaleY(30)));
                     EndChild();
 
-                    if (IsItemHovered())
-                    {
+                    if (IsItemHovered()) {
                         SetMouseCursor(ImGuiMouseCursor_Hand);
                         PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(ScaleX(10), ScaleY(10)));
                         PushStyleVar(ImGuiStyleVar_WindowRounding, 6);
@@ -272,7 +261,7 @@ const void RenderComponents()
                     SameLine(0, ScaleX(20));
                     SetCursorPosY(GetCursorPosY() + ScaleY(3));
                     Text(formattedComponent.c_str());
-    
+
                     break;
                 }
                 default:
@@ -289,18 +278,18 @@ const void RenderUninstallSelect(std::shared_ptr<RouterNav> router, float xPos)
 {
     ImGuiIO& io = GetIO();
     ImGuiViewport* viewport = GetMainViewport();
-    
-    const int XPadding           = ScaleX(55);
+
+    const int XPadding = ScaleX(55);
     const int BottomNavBarHeight = ScaleY(115);
 
-    const int PromptContainerWidth  = viewport->Size.x - XPadding * 2;
+    const int PromptContainerWidth = viewport->Size.x - XPadding * 2;
     const int PromptContainerHeight = viewport->Size.y / 1.5f;
 
-    float startY  = viewport->Size.y + BottomNavBarHeight;
-    float targetY = viewport->Size.y - BottomNavBarHeight; 
-    
+    float startY = viewport->Size.y + BottomNavBarHeight;
+    float targetY = viewport->Size.y - BottomNavBarHeight;
+
     static float currentY = startY;
-    static bool animate   = true;
+    static bool animate = true;
 
     static auto animationStartTime = std::chrono::steady_clock::now();
 
@@ -310,7 +299,7 @@ const void RenderUninstallSelect(std::shared_ptr<RouterNav> router, float xPos)
     BeginChild("##PromptContainer", ImVec2(PromptContainerWidth, PromptContainerHeight), false);
     {
         PushFont(io.Fonts->Fonts[1]);
-        Text("Uninstall Millennium 😔");
+        Text("Uninstall Millennium");
         PopFont();
 
         SetCursorPosY(GetCursorPosY() + ScaleY(5));
@@ -319,10 +308,10 @@ const void RenderUninstallSelect(std::shared_ptr<RouterNav> router, float xPos)
 
         SetCursorPosY(GetCursorPosY() + ScaleY(30));
         RenderComponents();
-        SetCursorPosY(GetCursorPosY() + ScaleY(40));    
+        SetCursorPosY(GetCursorPosY() + ScaleY(40));
 
         Separator();
-        SetCursorPosY(GetCursorPosY() + ScaleY(5)); 
+        SetCursorPosY(GetCursorPosY() + ScaleY(5));
 
         Text("Uninstalling from: %s", steamPath.string().c_str());
         Text("Reclaimed Disk Space: %s", GetReclaimedSpace().c_str());
@@ -332,28 +321,22 @@ const void RenderUninstallSelect(std::shared_ptr<RouterNav> router, float xPos)
     EndChild();
     PopStyleColor();
 
-    RenderBottomNavBar("InstallPrompt", xPos, [router, xPos] 
+    RenderBottomNavBar("InstallPrompt", xPos, [router, xPos]
     {
         static bool isButtonHovered = false;
         float currentColor = EaseInOutFloat("##NextButton", 1.0f, 0.8f, isButtonHovered, 0.3f);
 
-        PushStyleColor(ImGuiCol_Button,        ImVec4(currentColor, currentColor, currentColor, 1.0f));
+        PushStyleColor(ImGuiCol_Button, ImVec4(currentColor, currentColor, currentColor, 1.0f));
         PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(currentColor, currentColor, currentColor, 1.0f));
-        PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.8f, 0.8f, 0.8f, 1.0f));
+        PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.8f, 0.8f, 0.8f, 1.0f));
 
-        if (uninstallFinished)
-        {
-            if (Button("Exit", ImVec2(xPos + GetContentRegionAvail().x, GetContentRegionAvail().y)))
-            {
+        if (uninstallFinished) {
+            if (Button("Exit", ImVec2(xPos + GetContentRegionAvail().x, GetContentRegionAvail().y))) {
                 std::exit(0);
             }
-        }
-        else
-        {
-            if (Button("Uninstall", ImVec2(xPos + GetContentRegionAvail().x, GetContentRegionAvail().y)))
-            {
-                if (isUninstalling)
-                {
+        } else {
+            if (Button("Uninstall", ImVec2(xPos + GetContentRegionAvail().x, GetContentRegionAvail().y))) {
+                if (isUninstalling) {
                     return;
                 }
 
@@ -364,8 +347,7 @@ const void RenderUninstallSelect(std::shared_ptr<RouterNav> router, float xPos)
             }
         }
 
-        if (isButtonHovered)
-        {
+        if (isButtonHovered) {
             SetMouseCursor(ImGuiMouseCursor_Hand);
         }
 

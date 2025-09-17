@@ -1,24 +1,24 @@
 /**
  * ==================================================
- *   _____ _ _ _             _                     
- *  |     |_| | |___ ___ ___|_|_ _ _____           
- *  | | | | | | | -_|   |   | | | |     |          
- *  |_|_|_|_|_|_|___|_|_|_|_|_|___|_|_|_|          
- * 
+ *   _____ _ _ _             _
+ *  |     |_| | |___ ___ ___|_|_ _ _____
+ *  | | | | | | | -_|   |   | | | |     |
+ *  |_|_|_|_|_|_|___|_|_|_|_|_|___|_|_|_|
+ *
  * ==================================================
- * 
+ *
  * Copyright (c) 2025 Project Millennium
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -62,7 +62,7 @@
 
 using namespace ImGui;
 
-int WINDOW_WIDTH  = 663;
+int WINDOW_WIDTH = 663;
 int WINDOW_HEIGHT = 434;
 
 const float TARGET_FPS = 240.0f;
@@ -70,77 +70,69 @@ const float TARGET_FRAME_TIME = 1.0f / TARGET_FPS;
 
 static void GLFWErrorCallback(int error, const char* description)
 {
-    if (error == GLFW_API_UNAVAILABLE) 
-    {
-        MessageBoxA(NULL, 
-            "Your system doesn't support hardware rendering, which is preventing the installer from displaying properly. "
-            "To resolve this issue, download the DLL files from \nhttps://github.com/SteamClientHomebrew/Installer/tree/main/vendor/mesa\n and place them in the same folder as the installer. This will enable software rendering as an alternative.\n\n"
-            "Please note: This is a system limitation, not an installer bug, so there's no need to report it to the development team.", "Error", MB_ICONERROR);
+    if (error == GLFW_API_UNAVAILABLE) {
+        MessageBoxA(NULL,
+                    "Your system doesn't support hardware rendering, which is preventing the installer from displaying properly. "
+                    "To resolve this issue, download the DLL files from \nhttps://github.com/SteamClientHomebrew/Installer/tree/main/vendor/mesa\n and place them in the same "
+                    "folder as the installer. This will enable software rendering as an alternative.\n\n"
+                    "Please note: This is a system limitation, not an installer bug, so there's no need to report it to the development team.",
+                    "Error", MB_ICONERROR);
         return;
     }
 
     MessageBoxA(NULL, fmt::format("An error occurred.\n\nGLFW Error {}: {}", error, description).c_str(), "Whoops!", MB_ICONERROR);
 }
 
-void WindowRefreshCallback(GLFWwindow *window)
+void WindowRefreshCallback(GLFWwindow* window)
 {
     glfwSwapBuffers(window);
     glFinish();
 }
 
-std::atomic<bool> shouldSetupScaling {false};
+std::atomic<bool> shouldSetupScaling{ false };
 GLFWwindow* g_Window = nullptr;
 
-void SetupImGuiScaling(GLFWwindow* window) 
+void SetupImGuiScaling(GLFWwindow* window)
 {
     SetupDPI(window);
+
     ImGuiIO& io = GetIO();
     ImGuiStyle& style = GetStyle();
-    GLuint fontTexture;
-
-    unsigned char* pixels;
-    int width, height;
     float scaleFactor = XDPI;
 
     constexpr static const auto fontPath = "C:/Windows/Fonts/seguiemj.ttf";
     static ImFontConfig cfg;
-    static ImWchar ranges[] = { 0x1, 0x1FFFF, 0 };
 
-    cfg.OversampleH = cfg.OversampleV = 1;
-    cfg.MergeMode   = true;
-    cfg.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_LoadColor;
-    
-    // Clear fonts
+    cfg.MergeMode = true;
+    cfg.FontLoaderFlags |= ImGuiFreeTypeLoaderFlags_LoadColor;
+
     io.Fonts->Clear();
-    io.Fonts->AddFontFromMemoryTTF((void*)GeistVaraible, sizeof(GeistVaraible), 16.0f * scaleFactor);
-    if (std::filesystem::exists(fontPath)) 
-    {
-        io.Fonts->AddFontFromFileTTF(fontPath, 12.0f * scaleFactor, &cfg, ranges);
-    }
-    io.Fonts->AddFontFromMemoryTTF((void*)Geist_Bold,    sizeof(Geist_Bold),    18.0f * scaleFactor);
-    if (std::filesystem::exists(fontPath)) 
-    {
-        io.Fonts->AddFontFromFileTTF(fontPath, 16.0f * scaleFactor, &cfg, ranges);
-    }
+    io.Fonts->AddFontFromMemoryTTF((void*)GeistVariable, sizeof(GeistVariable), 16.0f * scaleFactor);
+    // if (std::filesystem::exists(fontPath)) {
+    //     io.Fonts->AddFontFromFileTTF(fontPath, 14.0f * scaleFactor, &cfg);
+    // }
+    io.Fonts->AddFontFromMemoryTTF((void*)Geist_Bold, sizeof(Geist_Bold), 18.0f * scaleFactor);
+    // if (std::filesystem::exists(fontPath)) {
+    //     io.Fonts->AddFontFromFileTTF(fontPath, 16.0f * scaleFactor, &cfg);
+    // }
 
-    io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
+    /** Explicitly set FreeType as the font loader to ensure color emoji support */
+    // io.Fonts->SetFontLoader(ImGuiFreeType::GetFontLoader());
+    // io.Fonts->Build();
 
-    glGenTextures  ( 1, &fontTexture );
-    glBindTexture  ( GL_TEXTURE_2D, fontTexture );
-    glTexImage2D   ( GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+    /** Set FreeType builder flags and build the font atlas for color emoji support */
+    // io.Fonts->FontLoaderFlags = ImGuiFreeTypeBuilderFlags_LoadColor;
+    // io.Fonts->Build();
 
-    io.Fonts->SetTexID((ImTextureID)(intptr_t)fontTexture);
     io.DisplayFramebufferScale = ImVec2(scaleFactor, scaleFactor);
 
     /** Reset current ImGui style */
-    style = ImGuiStyle(); 
+    style = ImGuiStyle();
     style.ScaleAllSizes(scaleFactor);
     SetupColorScheme();
 }
 
-void FrameBufferSizeCallback(GLFWwindow* window, int width, int height) 
+void FrameBufferSizeCallback(GLFWwindow* window, int width, int height)
 {
     g_Window = window;
     shouldSetupScaling.store(true, std::memory_order_relaxed);
@@ -148,9 +140,8 @@ void FrameBufferSizeCallback(GLFWwindow* window, int width, int height)
 
 void SpawnRendererThread(GLFWwindow* window, const char* glsl_version, std::shared_ptr<RouterNav> router)
 {
-    glfwMakeContextCurrent(window); 
-    if (glewInit() != GLEW_OK) 
-    {
+    glfwMakeContextCurrent(window);
+    if (glewInit() != GLEW_OK) {
         std::cerr << "Failed to initialize GLEW\n";
         return;
     }
@@ -162,12 +153,10 @@ void SpawnRendererThread(GLFWwindow* window, const char* glsl_version, std::shar
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init(glsl_version);
 
-    while (!glfwWindowShouldClose(window)) 
-    {
+    while (!glfwWindowShouldClose(window)) {
         double frameStartTime = glfwGetTime();
 
-        if (shouldSetupScaling.load(std::memory_order_relaxed)) 
-        {
+        if (shouldSetupScaling.load(std::memory_order_relaxed)) {
             SetupImGuiScaling(window);
             shouldSetupScaling.store(false, std::memory_order_relaxed);
         }
@@ -176,23 +165,21 @@ void SpawnRendererThread(GLFWwindow* window, const char* glsl_version, std::shar
 
         static bool hasShown = false;
 
-        if (!hasShown)
-        {
+        if (!hasShown) {
             glfwShowWindow(window);
             hasShown = true;
         }
 
-        double elapsedTime   = glfwGetTime() - frameStartTime;
+        double elapsedTime = glfwGetTime() - frameStartTime;
         double remainingTime = TARGET_FRAME_TIME - elapsedTime;
 
-        if (remainingTime > 0) 
-        {
-            Sleep((DWORD)(remainingTime * 1000));  
+        if (remainingTime > 0) {
+            Sleep((DWORD)(remainingTime * 1000));
         }
     }
 }
 
-void setWindowIconFromMemory(GLFWwindow* window, const unsigned char* imageData, int width, int height) 
+void setWindowIconFromMemory(GLFWwindow* window, const unsigned char* imageData, int width, int height)
 {
     GLFWimage icon[1];
     icon[0].pixels = const_cast<unsigned char*>(imageData);
@@ -202,34 +189,32 @@ void setWindowIconFromMemory(GLFWwindow* window, const unsigned char* imageData,
     glfwSetWindowIcon(window, 1, icon);
 }
 
-void RenderBlur( HWND hwnd ) 
+void RenderBlur(HWND hwnd)
 {
-    struct ACCENTPOLICY 
+    struct ACCENTPOLICY
     {
         int na;
         int nf;
         int nc;
         int nA;
     };
-    
-    struct WINCOMPATTRDATA 
+
+    struct WINCOMPATTRDATA
     {
         int na;
         PVOID pd;
         ULONG ul;
     };
 
-    const HINSTANCE user32Handle = LoadLibrary( "user32.dll" );
+    const HINSTANCE user32Handle = LoadLibrary("user32.dll");
 
-    if (user32Handle) 
-    {
-        typedef BOOL( WINAPI* pSetWindowCompositionAttribute )( HWND, WINCOMPATTRDATA* );
+    if (user32Handle) {
+        typedef BOOL(WINAPI * pSetWindowCompositionAttribute)(HWND, WINCOMPATTRDATA*);
         const pSetWindowCompositionAttribute SetWindowCompositionAttribute = (pSetWindowCompositionAttribute)GetProcAddress(user32Handle, "SetWindowCompositionAttribute");
 
-        if ( SetWindowCompositionAttribute ) 
-        {
-            ACCENTPOLICY policy = { 3, 0, 0, 0 };
-            WINCOMPATTRDATA data = { 19, &policy,sizeof(ACCENTPOLICY) };
+        if (SetWindowCompositionAttribute) {
+            ACCENTPOLICY policy = { 4, 0, 0, 0x99111214 };
+            WINCOMPATTRDATA data = { 19, &policy, sizeof(ACCENTPOLICY) };
             SetWindowCompositionAttribute(hwnd, &data);
         }
         FreeLibrary(user32Handle);
@@ -238,8 +223,7 @@ void RenderBlur( HWND hwnd )
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-    if (IsDebuggerPresent())
-    {
+    if (IsDebuggerPresent()) {
         AllocConsole();
         FILE* file;
         freopen_s(&file, "CONOUT$", "w", stdout);
@@ -254,60 +238,52 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     }
 
     glfwSetErrorCallback(GLFWErrorCallback);
-    if (!glfwInit())
-    {
+    if (!glfwInit()) {
         MessageBoxA(NULL, "Failed to initialize GLFW", "Error", MB_ICONERROR);
         return 1;
     }
 
-    GLFWmonitor* monitor = glfwGetPrimaryMonitor(); 
-    if (!monitor) 
-    {
+    GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+    if (!monitor) {
         MessageBoxA(NULL, "Failed to get primary monitor", "Error", MB_ICONERROR);
         glfwTerminate();
         return -1;
     }
 
     const char* glsl_version = "#version 130";
-    glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 3 );
-    glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 0 );
-    glfwWindowHint( GLFW_SCALE_TO_MONITOR,      GLFW_TRUE  );
-    glfwWindowHint( GLFW_RESIZABLE,             GLFW_FALSE );
-    glfwWindowHint( GLFW_VISIBLE,               GLFW_FALSE );
-    glfwWindowHint( GLFW_SAMPLES,               4 ); 
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+    glfwWindowHint(GLFW_SAMPLES, 4);
 
     GLFWwindow* window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Steam Homebrew", nullptr, nullptr);
-    if (window == nullptr)
-    {
+    if (window == nullptr) {
         return 1;
     }
-    
+
     SetupDPI(window);
 
-    #ifdef _WIN32
+#ifdef _WIN32
     HWND hwnd = glfwGetWin32Window(window);
     RenderBlur(hwnd);
-    #endif
+#endif
 
     // Load image from memory
     int width, height, channels;
     ColorScheme colorScheme = GetWindowsColorScheme();
 
-    unsigned char* data = stbi_load_from_memory(
-        colorScheme ==  Light ? windowIconDark : windowIconLight, 
-        colorScheme ==  Light ? sizeof(windowIconDark) : sizeof(windowIconLight), 
-        &width, &height, &channels, 4
-    ); 
+    unsigned char* data = stbi_load_from_memory(colorScheme == Light ? windowIconDark : windowIconLight, colorScheme == Light ? sizeof(windowIconDark) : sizeof(windowIconLight),
+                                                &width, &height, &channels, 4);
 
-    if (data)
-    {
+    if (data) {
         setWindowIconFromMemory(window, data, width, height);
         stbi_image_free(data);
     }
 
     GLFWmonitor* primaryMonitor = glfwGetPrimaryMonitor();
-    if (!primaryMonitor) 
-    {
+    if (!primaryMonitor) {
         std::cerr << "Failed to get primary monitor\n";
         glfwTerminate();
         return -1;
@@ -317,8 +293,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     glfwGetMonitorPos(primaryMonitor, &monitorX, &monitorY);
 
     const GLFWvidmode* vidMode = glfwGetVideoMode(primaryMonitor);
-    if (!vidMode) 
-    {
+    if (!vidMode) {
         std::cerr << "Failed to get video mode\n";
         glfwTerminate();
         return -1;
@@ -329,12 +304,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     glfwSetWindowPos(window, posX, posY);
 
-    glfwSetWindowRefreshCallback  (window, WindowRefreshCallback);
+    glfwSetWindowRefreshCallback(window, WindowRefreshCallback);
     glfwSetFramebufferSizeCallback(window, FrameBufferSizeCallback);
 
     IMGUI_CHECKVERSION();
     CreateContext();
-    ImGuiIO& io = GetIO(); (void)io;
+    ImGuiIO& io = GetIO();
+    (void)io;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
     io.IniFilename = nullptr;
@@ -342,8 +318,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     std::shared_ptr<RouterNav> router = std::make_shared<RouterNav>(std::vector<Component>{ RenderHome });
     auto rendererThread = std::thread(SpawnRendererThread, window, glsl_version, router);
 
-    while (!glfwWindowShouldClose(window))
-    {
+    while (!glfwWindowShouldClose(window)) {
         glfwWaitEvents();
     }
 

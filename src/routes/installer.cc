@@ -1,24 +1,24 @@
 /**
  * ==================================================
- *   _____ _ _ _             _                     
- *  |     |_| | |___ ___ ___|_|_ _ _____           
- *  | | | | | | | -_|   |   | | | |     |          
- *  |_|_|_|_|_|_|___|_|_|_|_|_|___|_|_|_|          
- * 
+ *   _____ _ _ _             _
+ *  |     |_| | |___ ___ ___|_|_ _ _____
+ *  | | | | | | | -_|   |   | | | |     |
+ *  |_|_|_|_|_|_|___|_|_|_|_|_|___|_|_|_|
+ *
  * ==================================================
- * 
+ *
  * Copyright (c) 2025 Project Millennium
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -63,10 +63,9 @@ static float startProgress = 0.0f;
 
 std::unique_ptr<TaskScheduler> scheduler = std::make_unique<TaskScheduler>();
 
-void UpdateProgressEasing() 
+void UpdateProgressEasing()
 {
-    if (std::abs(targetProgress - progress) > 0.01f) 
-    {
+    if (std::abs(targetProgress - progress) > 0.01f) {
         transitionStartTime = std::chrono::steady_clock::now();
         startProgress = easedProgress;
         targetProgress = progress;
@@ -75,13 +74,10 @@ void UpdateProgressEasing()
     auto now = std::chrono::steady_clock::now();
     float elapsedTime = std::chrono::duration<float>(now - transitionStartTime).count();
 
-    if (elapsedTime < TRANSITION_DURATION) 
-    {
+    if (elapsedTime < TRANSITION_DURATION) {
         float t = elapsedTime / TRANSITION_DURATION;
         easedProgress = startProgress + (targetProgress - startProgress) * EaseInOut(t);
-    } 
-    else 
-    {
+    } else {
         easedProgress = targetProgress;
     }
 }
@@ -90,13 +86,13 @@ void DownloadReleaseAssets(std::unique_ptr<double>& progress, const nlohmann::js
 {
     /** Update the progress text */
     statusText = "Downloading Millennium...";
-    
-    const auto fileSize    = osReleaseInfo["size"].get<double>();
+
+    const auto fileSize = osReleaseInfo["size"].get<double>();
     const auto downloadUrl = osReleaseInfo["browser_download_url"].get<std::string>();
     /** Download to the temp directory */
-    const auto fileName    = std::filesystem::temp_directory_path() / osReleaseInfo["name"].get<std::string>();
+    const auto fileName = std::filesystem::temp_directory_path() / osReleaseInfo["name"].get<std::string>();
 
-    Http::downloadFile( downloadUrl, fileName.string(), fileSize, [&progress](double downloaded, double total) { *progress = downloaded / total; }, true);
+    Http::downloadFile(downloadUrl, fileName.string(), fileSize, [&progress](double downloaded, double total) { *progress = downloaded / total; }, true);
 }
 
 void InstallReleaseAssets(std::unique_ptr<double>& progress, const nlohmann::json& releaseInfo, const nlohmann::json& osReleaseInfo, const std::string& steamPath)
@@ -110,7 +106,7 @@ void InstallReleaseAssets(std::unique_ptr<double>& progress, const nlohmann::jso
     ExtractZippedArchive(fileName.string().c_str(), steamPath.c_str(), progress.get(), &currentFileProgress);
 }
 
-std::atomic<bool> hasTaskSchedulerFinished { false };
+std::atomic<bool> hasTaskSchedulerFinished{ false };
 
 void OnFinishInstall()
 {
@@ -138,7 +134,7 @@ void StartInstaller(std::string steamPath, nlohmann::json& releaseInfo, nlohmann
 
 const void RenderInstaller(std::shared_ptr<RouterNav> router, float xPos)
 {
-    progress = scheduler->getProgress(); 
+    progress = scheduler->getProgress();
 
     router->setCanGoBack(false);
     UpdateProgressEasing();
@@ -146,12 +142,12 @@ const void RenderInstaller(std::shared_ptr<RouterNav> router, float xPos)
     ImGuiIO& io = GetIO();
     ImGuiViewport* viewport = GetMainViewport();
     static const float BottomNavBarHeight = ScaleY(115);
-    
-    float startY  = viewport->Size.y + BottomNavBarHeight;
-    float targetY = viewport->Size.y - BottomNavBarHeight; 
-    
+
+    float startY = viewport->Size.y + BottomNavBarHeight;
+    float targetY = viewport->Size.y - BottomNavBarHeight;
+
     static float currentY = startY;
-    static bool shouldAnimate   = false;
+    static bool shouldAnimate = false;
     static bool shouldRenderCompleteModal = false;
 
     static auto animationStartTime = std::chrono::steady_clock::now();
@@ -159,12 +155,12 @@ const void RenderInstaller(std::shared_ptr<RouterNav> router, float xPos)
     static const int spinnerSize = ScaleX(14);
     static const int progressBarWidth = ScaleX(300);
 
-    if (!shouldRenderCompleteModal)
-    {
+    if (!shouldRenderCompleteModal) {
         // router->setCanGoBack(true);
         SetCursorPos({ xPos + (viewport->Size.x / 2) - spinnerSize, (viewport->Size.y / 2) - 50 });
         {
-            Spinner<SpinnerTypeT::e_st_ang>("SpinnerAngNoBg", Radius{spinnerSize}, Thickness{ScaleX(3)}, Color{ImColor(255, 255, 255, 255)}, BgColor{ImColor(255, 255, 255, 0)}, Speed{6}, Angle{IM_PI}, Mode{0});
+            Spinner<SpinnerTypeT::e_st_ang>("SpinnerAngNoBg", Radius{ spinnerSize }, Thickness{ ScaleX(3) }, Color{ ImColor(255, 255, 255, 255) },
+                                            BgColor{ ImColor(255, 255, 255, 0) }, Speed{ 6 }, Angle{ IM_PI }, Mode{ 0 });
         }
         SetCursorPos({ xPos + ((viewport->Size.x - progressBarWidth) / 2), viewport->Size.y / 2 + ScaleY(60) });
         {
@@ -173,9 +169,7 @@ const void RenderInstaller(std::shared_ptr<RouterNav> router, float xPos)
 
         SetCursorPos({ xPos + (viewport->Size.x) / 2 - (CalcTextSize(statusText.c_str()).x / 2), viewport->Size.y / 2 + ScaleY(15) });
         Text(statusText.c_str());
-    }
-    else
-    {
+    } else {
         const char* text = "You're all set!  Thanks for using Millennium 💖";
         const char* description = "If you're new here, see further instructions when Steam® starts.";
         const char* subDescription = "View Documentation 🔗";
@@ -195,55 +189,47 @@ const void RenderInstaller(std::shared_ptr<RouterNav> router, float xPos)
         Text(subDescription);
         PopStyleColor();
 
-        if (IsItemHovered())
-        {
+        if (IsItemHovered()) {
             SetMouseCursor(ImGuiMouseCursor_Hand);
         }
-        if (IsItemClicked())
-        {
+        if (IsItemClicked()) {
             OpenUrl("https://docs.steambrew.app/users/getting-started");
         }
     }
 
-    if (hasTaskSchedulerFinished.load() && easedProgress == 1.0f)
-    {
+    if (hasTaskSchedulerFinished.load() && easedProgress == 1.0f) {
         shouldAnimate = true;
         shouldRenderCompleteModal = true;
         animationStartTime = std::chrono::steady_clock::now();
 
         /** Reset the flag so it doesn't restart the animation each frame */
-        hasTaskSchedulerFinished.store(false); 
+        hasTaskSchedulerFinished.store(false);
     }
 
     static const float ANIMATION_DURATION = 0.3f;
 
-    if (shouldAnimate)
-    {
+    if (shouldAnimate) {
         auto now = std::chrono::steady_clock::now();
         float elapsedTime = std::chrono::duration<float>(now - animationStartTime).count();
 
-        if (elapsedTime < ANIMATION_DURATION) 
-        {
+        if (elapsedTime < ANIMATION_DURATION) {
             currentY = EaseOutBack(elapsedTime, startY, targetY - startY, ANIMATION_DURATION);
-        } 
-        else 
-        {
+        } else {
             currentY = viewport->Size.y - BottomNavBarHeight;
             shouldAnimate = false;
         }
     }
 
-    if (!shouldRenderCompleteModal)
-    {
+    if (!shouldRenderCompleteModal) {
         return;
     }
 
     SetCursorPos({ xPos, currentY });
 
-    PushStyleVar  (ImGuiStyleVar_WindowPadding, ImVec2(ScaleX(30), ScaleY(30))     );
-    PushStyleColor(ImGuiCol_Border,             ImVec4(0.f, 0.f, 0.f, 0.f)         );
-    PushStyleVar  (ImGuiStyleVar_ChildRounding, 0.0f                               );
-    PushStyleColor(ImGuiCol_ChildBg,            ImVec4(0.078f, 0.082f, 0.09f, 1.0f));
+    PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(ScaleX(30), ScaleY(30)));
+    PushStyleColor(ImGuiCol_Border, ImVec4(0.f, 0.f, 0.f, 0.f));
+    PushStyleVar(ImGuiStyleVar_ChildRounding, 0.0f);
+    PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.078f, 0.082f, 0.09f, 1.0f));
 
     BeginChild("##BottomNavBar", { viewport->Size.x, BottomNavBarHeight - 3 }, true, ImGuiWindowFlags_NoScrollbar);
     {
@@ -258,30 +244,28 @@ const void RenderInstaller(std::shared_ptr<RouterNav> router, float xPos)
 
         SetCursorPos({ cursorPosSave, GetCursorPosY() - ScaleY(20) });
         TextColored(ImVec4(0.322f, 0.325f, 0.341f, 1.0f), "Steam®, Valve, or any of their partners.");
-        
+
         SameLine(0);
         SetCursorPosY(GetCursorPosY() - ScaleY(25));
 
         static bool isButtonHovered = false;
         float currentColor = EaseInOutFloat("##NextButton", 1.0f, 0.8f, isButtonHovered, 0.3f);
 
-        PushStyleColor(ImGuiCol_Button,        ImVec4(currentColor, currentColor, currentColor, 1.0f));
+        PushStyleColor(ImGuiCol_Button, ImVec4(currentColor, currentColor, currentColor, 1.0f));
         PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(currentColor, currentColor, currentColor, 1.0f));
-        PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.8f, 0.8f, 0.8f, 1.0f));
-        PushStyleColor(ImGuiCol_Text,          ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
+        PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.8f, 0.8f, 0.8f, 1.0f));
+        PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
 
         static const int ButtonWidth = ScaleX(150);
         const float buttonPos = GetCursorPosY();
 
         SetCursorPosX(xPos + GetCursorPosX() + GetContentRegionAvail().x - ButtonWidth);
 
-        if (Button("Finish", { xPos + GetContentRegionAvail().x, GetContentRegionAvail().y} ))
-        {
+        if (Button("Finish", { xPos + GetContentRegionAvail().x, GetContentRegionAvail().y })) {
             std::thread(StartSteamFromPath, g_steamPath).detach();
         }
 
-        if (isButtonHovered)
-        {
+        if (isButtonHovered) {
             SetMouseCursor(ImGuiMouseCursor_Hand);
         }
 

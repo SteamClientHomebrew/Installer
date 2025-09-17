@@ -1,24 +1,24 @@
 /**
  * ==================================================
- *   _____ _ _ _             _                     
- *  |     |_| | |___ ___ ___|_|_ _ _____           
- *  | | | | | | | -_|   |   | | | |     |          
- *  |_|_|_|_|_|_|___|_|_|_|_|_|___|_|_|_|          
- * 
+ *   _____ _ _ _             _
+ *  |     |_| | |___ ___ ___|_|_ _ _____
+ *  | | | | | | | -_|   |   | | | |     |
+ *  |_|_|_|_|_|_|___|_|_|_|_|_|___|_|_|_|
+ *
  * ==================================================
- * 
+ *
  * Copyright (c) 2025 Project Millennium
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -39,7 +39,7 @@
 #include <iostream>
 #include <dpi.h>
 #include <unordered_map>
-#include <components.h> 
+#include <components.h>
 #include <windows.h>
 #include <shobjidl.h>
 #include <commdlg.h>
@@ -56,53 +56,46 @@ using namespace ImGui;
 const CheckBoxState* checkForUpdates;
 const CheckBoxState* automaticallyInstallUpdates;
 
-static ImGui::MarkdownConfig mdConfig; 
+static ImGui::MarkdownConfig mdConfig;
 nlohmann::json releaseInfo, osReleaseInfo;
 
 const bool FetchVersionInfo()
 {
     const auto response = Http::Get("https://api.github.com/repos/SteamClientHomebrew/Millennium/releases", false);
 
-    if (response.empty())
-    {
+    if (response.empty()) {
         ShowMessageBox("Whoops!", "Failed to fetch version information from the GitHub API! Make sure you have a valid internet connection.", Error);
         return false;
     }
 
     bool hasFoundReleaseInfo = false;
 
-    try 
-    {
+    try {
         releaseInfo = nlohmann::json::parse(response);
         // Find the latest non-prerelease version
-        for (const auto& release : releaseInfo)
-        {
-            if (release.contains("prerelease") && release["prerelease"].is_boolean() && release["prerelease"].get<bool>() == false)
-            {
+        for (const auto& release : releaseInfo) {
+            if (release.contains("prerelease") && release["prerelease"].is_boolean() && release["prerelease"].get<bool>() == false) {
                 releaseInfo = release;
-                for (const auto& asset : releaseInfo["assets"])
-                {
-                    std::string assetName  = asset["name"];
+                for (const auto& asset : releaseInfo["assets"]) {
+                    std::string assetName = asset["name"];
                     std::string releaseTag = releaseInfo["tag_name"];
-    
-                    #ifdef WIN32
+
+#ifdef WIN32
                     if (assetName == fmt::format("millennium-{}-windows-x86_64.zip", releaseTag))
-                    #elif __linux__
+#elif __linux__
                     if (assetName == fmt::format("millennium-{}-linux-x86_64.tar.gz", release["tag_name"].get<std::string>()))
-                    #endif
+#endif
                     {
                         osReleaseInfo = asset;
                         hasFoundReleaseInfo = true;
                         break;
                     }
                 }
-    
+
                 break;
             }
         }
-    }
-    catch (const nlohmann::json::exception& e)
-    {
+    } catch (const nlohmann::json::exception& e) {
         std::cerr << "JSON parse error: " << e.what() << std::endl;
         ShowMessageBox("Whoops!", "Failed to parse version information from the GitHub API! Please wait a moment and try again, you're likely rate limited.", Error);
         return false;
@@ -117,18 +110,18 @@ const void RenderInstallPrompt(std::shared_ptr<RouterNav> router, float xPos)
 
     ImGuiIO& io = GetIO();
     ImGuiViewport* viewport = GetMainViewport();
-    
-    const int XPadding           = ScaleX(55);
+
+    const int XPadding = ScaleX(55);
     const int BottomNavBarHeight = ScaleY(115);
 
-    const int PromptContainerWidth  = viewport->Size.x - XPadding * 2;
+    const int PromptContainerWidth = viewport->Size.x - XPadding * 2;
     const int PromptContainerHeight = viewport->Size.y / 1.5f;
 
-    float startY  = viewport->Size.y + BottomNavBarHeight;
-    float targetY = viewport->Size.y - BottomNavBarHeight; 
-    
+    float startY = viewport->Size.y + BottomNavBarHeight;
+    float targetY = viewport->Size.y - BottomNavBarHeight;
+
     static float currentY = startY;
-    static bool  animate  = true;
+    static bool animate = true;
 
     static auto animationStartTime = std::chrono::steady_clock::now();
 
@@ -138,25 +131,24 @@ const void RenderInstallPrompt(std::shared_ptr<RouterNav> router, float xPos)
     BeginChild("##PromptContainer", ImVec2(PromptContainerWidth, PromptContainerHeight), false);
     {
         PushFont(io.Fonts->Fonts[1]);
-        Text(fmt::format("Install Millennium {} ✨", releaseInfo["tag_name"].get<std::string>()).c_str());
+        Text("Install Millennium");
         PopFont();
 
         Spacing();
         PushStyleColor(ImGuiCol_Text, ImVec4(0.422f, 0.425f, 0.441f, 1.0f));
         TextWrapped(fmt::format("Released {} • ", ToTimeAgo(releaseInfo["published_at"].get<std::string>())).c_str());
         SameLine(0, ScaleX(5));
-        TextColored(ImVec4(0.408f, 0.525f, 0.91f, 1.0f), "view in browser");
+        TextColored(ImVec4(0.408f, 0.525f, 0.91f, 1.0f), "view release notes");
 
-        if (IsItemHovered())
-        {
+        if (IsItemHovered()) {
             SetMouseCursor(ImGuiMouseCursor_Hand);
         }
         static bool showModal = false;
         static bool hasSkippedFirstFrame = false;
 
-        if (IsItemClicked())
-        {
-            ShellExecuteA(NULL, "open", fmt::format("https://github.com/SteamClientHomebrew/Millennium/releases/tag/{}", releaseInfo["tag_name"].get<std::string>()).c_str(), NULL, NULL, SW_SHOWNORMAL);
+        if (IsItemClicked()) {
+            ShellExecuteA(NULL, "open", fmt::format("https://github.com/SteamClientHomebrew/Millennium/releases/tag/{}", releaseInfo["tag_name"].get<std::string>()).c_str(), NULL,
+                          NULL, SW_SHOWNORMAL);
         }
 
         Spacing();
@@ -183,11 +175,9 @@ const void RenderInstallPrompt(std::shared_ptr<RouterNav> router, float xPos)
         PushFont(io.Fonts->Fonts[1]);
         float buttonCursorPosX = GetCursorPosX();
 
-        if (Button("...", ImVec2(GetContentRegionAvail().x, ScaleY(44))))
-        {
+        if (Button("...", ImVec2(GetContentRegionAvail().x, ScaleY(44)))) {
             auto newSteamPath = SelectNewSteamPath();
-            if (newSteamPath.has_value())
-            {
+            if (newSteamPath.has_value()) {
                 steamPath = newSteamPath.value();
             }
         }
@@ -197,8 +187,7 @@ const void RenderInstallPrompt(std::shared_ptr<RouterNav> router, float xPos)
         float currentColor = EaseInOutFloat("##OpenFolderButton", 0.f, 1.f, isOpenFolderHovered, 0.3f);
 
         /** Check if the animation has started */
-        if (currentColor != 0.f)
-        {
+        if (currentColor != 0.f) {
             SetMouseCursor(ImGuiMouseCursor_Hand);
             SetNextWindowPos(ImVec2(buttonCursorPosX - ScaleX(183), GetCursorPosY() + ScaleY(120)));
 
@@ -231,22 +220,20 @@ const void RenderInstallPrompt(std::shared_ptr<RouterNav> router, float xPos)
     EndChild();
     PopStyleColor();
 
-    RenderBottomNavBar("InstallPrompt", xPos, [router, xPos] 
+    RenderBottomNavBar("InstallPrompt", xPos, [router, xPos]
     {
         static bool isButtonHovered = false;
         float currentColor = EaseInOutFloat("##InstallButton", 1.0f, 0.8f, isButtonHovered, 0.3f);
 
-        PushStyleColor(ImGuiCol_Button,        ImVec4(currentColor, currentColor, currentColor, 1.0f));
+        PushStyleColor(ImGuiCol_Button, ImVec4(currentColor, currentColor, currentColor, 1.0f));
         PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(currentColor, currentColor, currentColor, 1.0f));
 
-        if (Button("Install", ImVec2(xPos + GetContentRegionAvail().x, GetContentRegionAvail().y)))
-        {
+        if (Button("Install", ImVec2(xPos + GetContentRegionAvail().x, GetContentRegionAvail().y))) {
             std::thread(StartInstaller, steamPath, std::ref(releaseInfo), std::ref(osReleaseInfo)).detach();
             router->navigateNext();
         }
 
-        if (isButtonHovered)
-        {
+        if (isButtonHovered) {
             SetMouseCursor(ImGuiMouseCursor_Hand);
         }
 

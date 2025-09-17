@@ -1,24 +1,24 @@
 /**
  * ==================================================
- *   _____ _ _ _             _                     
- *  |     |_| | |___ ___ ___|_|_ _ _____           
- *  | | | | | | | -_|   |   | | | |     |          
- *  |_|_|_|_|_|_|___|_|_|_|_|_|___|_|_|_|          
- * 
+ *   _____ _ _ _             _
+ *  |     |_| | |___ ___ ___|_|_ _ _____
+ *  | | | | | | | -_|   |   | | | |     |
+ *  |_|_|_|_|_|_|___|_|_|_|_|_|___|_|_|_|
+ *
  * ==================================================
- * 
+ *
  * Copyright (c) 2025 Project Millennium
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -42,7 +42,7 @@
 
 using namespace ImGui;
 
-constexpr const char* discordInviteLink   = "https://steambrew.app/discord";
+constexpr const char* discordInviteLink = "https://steambrew.app/discord";
 constexpr const char* githubRepositoryUrl = "https://github.com/SteamClientHomebrew/Millennium";
 
 const void RenderBottomNavBar(const char* identifier, float xPos, std::function<void()> buttonRenderCallback)
@@ -54,10 +54,10 @@ const void RenderBottomNavBar(const char* identifier, float xPos, std::function<
 
     SetCursorPos({ xPos, viewport->Size.y - BottomNavBarHeight + 1 });
 
-    PushStyleVar  (ImGuiStyleVar_WindowPadding, ImVec2(ScaleX(30), ScaleY(30))     );
-    PushStyleColor(ImGuiCol_Border,             ImVec4(0.f, 0.f, 0.f, 0.f)         );
-    PushStyleVar  (ImGuiStyleVar_ChildRounding, 0.0f                               );
-    PushStyleColor(ImGuiCol_ChildBg,            ImVec4(0.078f, 0.082f, 0.09f, 0.8f));
+    PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(ScaleX(30), ScaleY(30)));
+    PushStyleColor(ImGuiCol_Border, ImVec4(0.f, 0.f, 0.f, 0.f));
+    PushStyleVar(ImGuiStyleVar_ChildRounding, 0.0f);
+    PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.078f, 0.082f, 0.09f, 0.6f));
 
     BeginChild(fmt::format("##BottomNavBar{}", identifier).c_str(), ImVec2(viewport->Size.x, BottomNavBarHeight), true, ImGuiWindowFlags_NoScrollbar);
     {
@@ -72,7 +72,7 @@ const void RenderBottomNavBar(const char* identifier, float xPos, std::function<
 
         SetCursorPos({ cursorPosSave, GetCursorPosY() - ScaleY(20) });
         TextColored(ImVec4(0.322f, 0.325f, 0.341f, 1.0f), "Steam®, Valve, or any of their partners.");
-        
+
         SameLine(0);
         SetCursorPosY(GetCursorPosY() - ScaleY(25));
 
@@ -83,13 +83,11 @@ const void RenderBottomNavBar(const char* identifier, float xPos, std::function<
 
         Image((ImTextureID)(intptr_t)discordIconTexture, ImVec2(ScaleX(30), ScaleY(30)));
 
-        
         static bool isDiscordButtonHovered = false;
         float discordIconHoverTransparency = EaseInOutFloat(fmt::format("##DiscordIconHover{}", identifier).c_str(), 0.f, 1.f, isDiscordButtonHovered, 0.3f);
 
         /** Check if the animation has started */
-        if (discordIconHoverTransparency != 0.f)
-        {
+        if (discordIconHoverTransparency != 0.f) {
             SetMouseCursor(ImGuiMouseCursor_Hand);
             PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
             PushStyleColor(ImGuiCol_Border, ImVec4(0.18f, 0.184f, 0.192f, 1.0f));
@@ -101,8 +99,7 @@ const void RenderBottomNavBar(const char* identifier, float xPos, std::function<
             PushStyleColor(ImGuiCol_PopupBg, ImVec4(0.098f, 0.102f, 0.11f, 1.0f));
             SetTooltip("Join Discord Server");
 
-            if (IsItemClicked())
-            {
+            if (IsItemClicked()) {
                 OpenUrl(discordInviteLink);
             }
 
@@ -111,7 +108,6 @@ const void RenderBottomNavBar(const char* identifier, float xPos, std::function<
         }
 
         isDiscordButtonHovered = IsItemHovered() || (IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem) && IsMouseDown(ImGuiMouseButton_Left));
-
 
         SameLine(0, ScaleX(25));
         SetCursorPosY(GetCursorPosY() - ScaleY(15));
@@ -122,8 +118,7 @@ const void RenderBottomNavBar(const char* identifier, float xPos, std::function<
         float githubIconHoverTransparency = EaseInOutFloat(fmt::format("##GithubIconHover{}", identifier).c_str(), 0.f, 1.f, isGithubButtonHovered, 0.3f);
 
         /** Check if the animation has started */
-        if (githubIconHoverTransparency != 0.f)
-        {
+        if (githubIconHoverTransparency != 0.f) {
             SetMouseCursor(ImGuiMouseCursor_Hand);
             PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
             PushStyleColor(ImGuiCol_Border, ImVec4(0.18f, 0.184f, 0.192f, 1.0f));
@@ -135,8 +130,7 @@ const void RenderBottomNavBar(const char* identifier, float xPos, std::function<
             PushStyleColor(ImGuiCol_PopupBg, ImVec4(0.098f, 0.102f, 0.11f, 1.0f));
             SetTooltip("View Source Code");
 
-            if (IsItemClicked())
-            {
+            if (IsItemClicked()) {
                 OpenUrl(githubRepositoryUrl);
             }
 
@@ -149,8 +143,8 @@ const void RenderBottomNavBar(const char* identifier, float xPos, std::function<
         SameLine(0, ScaleX(25));
         SetCursorPosY(buttonPos);
 
-        PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.8f, 0.8f, 0.8f, 1.0f));
-        PushStyleColor(ImGuiCol_Text,          ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
+        PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.8f, 0.8f, 0.8f, 1.0f));
+        PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
         {
             buttonRenderCallback();
         }

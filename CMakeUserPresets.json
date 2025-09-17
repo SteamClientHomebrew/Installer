@@ -22,7 +22,8 @@
       "binaryDir": "${sourceDir}/build/debug",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "VCPKG_TARGET_TRIPLET": "x86-mingw-static"
+        "VCPKG_TARGET_TRIPLET": "x86-mingw-static",
+        "VCPKG_HOST_TRIPLET": "x64-mingw-static"
       }
     },
     {
@@ -32,7 +33,8 @@
       "binaryDir": "${sourceDir}/build/release",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "VCPKG_TARGET_TRIPLET": "x86-mingw-static"
+        "VCPKG_TARGET_TRIPLET": "x86-mingw-static",
+        "VCPKG_HOST_TRIPLET": "x64-mingw-static"
       }
     }
   ]

@@ -1,24 +1,24 @@
 /**
  * ==================================================
- *   _____ _ _ _             _                     
- *  |     |_| | |___ ___ ___|_|_ _ _____           
- *  | | | | | | | -_|   |   | | | |     |          
- *  |_|_|_|_|_|_|___|_|_|_|_|_|___|_|_|_|          
- * 
+ *   _____ _ _ _             _
+ *  |     |_| | |___ ___ ___|_|_ _ _____
+ *  | | | | | | | -_|   |   | | | |     |
+ *  |_|_|_|_|_|_|___|_|_|_|_|_|___|_|_|_|
+ *
  * ==================================================
- * 
+ *
  * Copyright (c) 2025 Project Millennium
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -36,18 +36,16 @@
 #include <dpi.h>
 
 WNDPROC g_OriginalWindProcCallback;
-bool    isTitleBarHovered = false;
+bool isTitleBarHovered = false;
 GLFWwindow* window;
 std::shared_ptr<RouterNav> g_routerPtr;
 
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-    switch (uMsg)
-    {
+    switch (uMsg) {
         case WM_NCCALCSIZE:
         {
-            if (wParam && lParam)
-            {
+            if (wParam && lParam) {
                 NCCALCSIZE_PARAMS* pParams = reinterpret_cast<NCCALCSIZE_PARAMS*>(lParam);
                 pParams->rgrc[0].top += 1;
                 pParams->rgrc[0].right -= 1;
@@ -65,13 +63,13 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             RECT clientRect;
             GetClientRect(hWnd, &clientRect);
 
-            const int titleBarHeight   = ScaleY(100);
+            const int titleBarHeight = ScaleY(100);
             const int closeButtonWidth = ScaleX(70);
-            const int backButtonWidth  = ScaleX(70);
+            const int backButtonWidth = ScaleX(70);
 
-            bool inTitleBar        = (cursorPos.y >= 0 && cursorPos.y <= titleBarHeight);
+            bool inTitleBar = (cursorPos.y >= 0 && cursorPos.y <= titleBarHeight);
             bool inCloseButtonArea = (cursorPos.x >= (clientRect.right - closeButtonWidth) && cursorPos.x <= clientRect.right);
-            bool inBackButtonArea  = (g_routerPtr->canGoBack() && cursorPos.x >= 0 && cursorPos.x <= backButtonWidth);
+            bool inBackButtonArea = (g_routerPtr->canGoBack() && cursorPos.x >= 0 && cursorPos.x <= backButtonWidth);
 
             return inTitleBar && !inCloseButtonArea && !inBackButtonArea ? HTCAPTION : HTCLIENT;
         }
@@ -84,7 +82,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             timeEndPeriod(1);
         }
     }
-    
+
     return CallWindowProc(g_OriginalWindProcCallback, hWnd, uMsg, wParam, lParam);
 }
 
@@ -97,7 +95,7 @@ void SetBorderlessWindowStyle(GLFWwindow* window, std::shared_ptr<RouterNav> rou
 
     RECT windowRect;
     GetWindowRect(hWnd, &windowRect);
-    int width  = windowRect.right - windowRect.left;
+    int width = windowRect.right - windowRect.left;
     int height = windowRect.bottom - windowRect.top;
 
     g_OriginalWindProcCallback = (WNDPROC)GetWindowLongPtr(hWnd, GWLP_WNDPROC);
