@@ -49,15 +49,36 @@ jobs:
         run: |
           cmake --preset=release
           cmake --build build/release --config Release -- -j$(nproc)
-          mkdir -p D:/a/build
-          mv build/release/Installer.exe D:/a/build/MillenniumInstaller-Windows.exe
+          mkdir -p D:/a/build/unsigned
+          mv build/release/Installer.exe D:/a/build/unsigned/MillenniumInstaller-Windows.exe
 
       - name: Upload Build Artifact
+        id: upload-unsigned-artifact
         uses: actions/upload-artifact@v4
         with:
           include-hidden-files: true
           name: millennium-windows
-          path: D:/a/build/MillenniumInstaller-Windows.exe
+          path: D:/a/build/unsigned/MillenniumInstaller-Windows.exe
+
+      - id: sign_artifact
+        uses: signpath/github-action-submit-signing-request@v1.1
+        with:
+          api-token: "${{ secrets.SIGNPATH_API_TOKEN }}"
+          organization-id: "f90532fc-e58c-4863-bc0d-72623720335f"
+          project-slug: "Millennium"
+          signing-policy-slug: "release-signing"
+          artifact-configuration-slug: "millennium-installer-release-config"
+          github-artifact-id: "${{ steps.upload-unsigned-artifact.outputs.artifact-id }}"
+          output-artifact-directory: "signed-millennium"
+          wait-for-completion: true
+
+      - name: 📤 Upload Signed Build Release
+        id: upload-signed-artifact
+        uses: actions/upload-artifact@v4
+        with:
+          include-hidden-files: true
+          name: millennium-windows-signed
+          path: "signed-millennium/MillenniumInstaller-Windows.exe"
 
       - name: Create GitHub Release
         run: npx semantic-release
