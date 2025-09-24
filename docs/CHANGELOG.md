@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/SteamClientHomebrew/Installer/compare/v1.1.2...v1.2.0) (2025-09-24)
+
+
+### Features
+
+* Add sign path signing ([1e00511](https://github.com/SteamClientHomebrew/Installer/commit/1e00511174994dcb820ba8749c1f4f2479faa387))
+
 ## [1.1.2](https://github.com/SteamClientHomebrew/Installer/compare/v1.1.1...v1.1.2) (2025-08-01)
 
 
