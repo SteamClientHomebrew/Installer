@@ -35,9 +35,9 @@ jobs:
             vendor/vcpkg/installed
             vendor/vcpkg/buildtrees
             vendor/vcpkg/packages
-          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
+          key: vcpkg-windows-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
           restore-keys: |
-            vcpkg-${{ runner.os }}-
+            vcpkg-windows-${{ runner.os }}-
 
       - name: (Setup) Semantic Release
         run: npm install --save-dev semantic-release @semantic-release/github @semantic-release/exec @semantic-release/changelog @semantic-release/git
@@ -71,14 +71,15 @@ jobs:
           name: millennium-windows
           path: D:/a/build/unsigned/MillenniumInstaller-Windows.exe
 
-      - id: sign_artifact
+      - name: Sign Installer Build
+        id: sign_artifact
         uses: signpath/github-action-submit-signing-request@v1.1
         with:
           api-token: "${{ secrets.SIGNPATH_API_TOKEN }}"
-          organization-id: "f90532fc-e58c-4863-bc0d-72623720335f"
-          project-slug: "Millennium"
-          signing-policy-slug: "release-signing"
-          artifact-configuration-slug: "millennium-installer-release-config"
+          organization-id: "6031d927-550b-4263-8ec0-44c4c7e39b6f"
+          project-slug: "Installer"
+          signing-policy-slug: "test-signing"
+          artifact-configuration-slug: "initial"
           github-artifact-id: "${{ steps.upload-unsigned-artifact.outputs.artifact-id }}"
           output-artifact-directory: "signed-millennium"
           wait-for-completion: true
