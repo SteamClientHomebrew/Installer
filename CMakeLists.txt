@@ -27,6 +27,7 @@ endif()
 add_compile_definitions(
   CURL_STATICLIB
   FMT_HEADER_ONLY
+  IMGUI_USE_WCHAR32
 )
 
 # Define source files

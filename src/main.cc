@@ -108,21 +108,17 @@ void SetupImGuiScaling(GLFWwindow* window)
 
     io.Fonts->Clear();
     io.Fonts->AddFontFromMemoryTTF((void*)GeistVariable, sizeof(GeistVariable), 16.0f * scaleFactor);
-    // if (std::filesystem::exists(fontPath)) {
-    //     io.Fonts->AddFontFromFileTTF(fontPath, 14.0f * scaleFactor, &cfg);
-    // }
+    if (std::filesystem::exists(fontPath)) {
+        io.Fonts->AddFontFromFileTTF(fontPath, 14.0f * scaleFactor, &cfg);
+    }
     io.Fonts->AddFontFromMemoryTTF((void*)Geist_Bold, sizeof(Geist_Bold), 18.0f * scaleFactor);
-    // if (std::filesystem::exists(fontPath)) {
-    //     io.Fonts->AddFontFromFileTTF(fontPath, 16.0f * scaleFactor, &cfg);
-    // }
+    if (std::filesystem::exists(fontPath)) {
+        io.Fonts->AddFontFromFileTTF(fontPath, 14.0f * scaleFactor, &cfg);
+    }
 
     /** Explicitly set FreeType as the font loader to ensure color emoji support */
-    // io.Fonts->SetFontLoader(ImGuiFreeType::GetFontLoader());
-    // io.Fonts->Build();
-
-    /** Set FreeType builder flags and build the font atlas for color emoji support */
-    // io.Fonts->FontLoaderFlags = ImGuiFreeTypeBuilderFlags_LoadColor;
-    // io.Fonts->Build();
+    io.Fonts->SetFontLoader(ImGuiFreeType::GetFontLoader());
+    io.Fonts->Build();
 
     io.DisplayFramebufferScale = ImVec2(scaleFactor, scaleFactor);
 

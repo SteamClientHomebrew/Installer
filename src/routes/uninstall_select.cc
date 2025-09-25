@@ -299,7 +299,7 @@ const void RenderUninstallSelect(std::shared_ptr<RouterNav> router, float xPos)
     BeginChild("##PromptContainer", ImVec2(PromptContainerWidth, PromptContainerHeight), false);
     {
         PushFont(io.Fonts->Fonts[1]);
-        Text("Uninstall Millennium");
+        Text("Uninstall Millennium 🙁");
         PopFont();
 
         SetCursorPosY(GetCursorPosY() + ScaleY(5));
