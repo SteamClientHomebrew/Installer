@@ -1,3 +1,11 @@
+# [1.3.0](https://github.com/SteamClientHomebrew/Installer/compare/v1.2.0...v1.3.0) (2025-10-15)
+
+
+### Features
+
+* Add MIT license ([f7034ba](https://github.com/SteamClientHomebrew/Installer/commit/f7034ba953b212900c1ae2aaf233d686f0777059))
+* Fix and add back emoji support (it matters to me) ([e927787](https://github.com/SteamClientHomebrew/Installer/commit/e9277873d53188c1cd86cf9cb325ce304e573af5))
+
 # [1.2.0](https://github.com/SteamClientHomebrew/Installer/compare/v1.1.2...v1.2.0) (2025-09-24)
 
 
