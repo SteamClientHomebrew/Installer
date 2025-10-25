@@ -31,7 +31,7 @@
 #include "task_scheduler.h"
 #include <algorithm>
 
-TaskScheduler::TaskScheduler() : overallProgress(0.0), currentTaskIndex(0), currentTaskProgress(std::make_unique<double>(0.0))
+TaskScheduler::TaskScheduler() : m_hasAnyTaskFailed(false), overallProgress(0.0), currentTaskIndex(0), currentTaskProgress(std::make_unique<double>(0.0))
 {
 }
 
@@ -43,6 +43,16 @@ void TaskScheduler::addTask(Task task)
 void TaskScheduler::addTasks(const std::vector<Task>& newTasks)
 {
     tasks.insert(tasks.end(), newTasks.begin(), newTasks.end());
+}
+
+bool TaskScheduler::hasFailed() const
+{
+    return m_hasAnyTaskFailed;
+}
+
+std::string TaskScheduler::getFailureReason() const
+{
+    return m_failureReason;
 }
 
 double TaskScheduler::getProgress() const
@@ -69,7 +79,14 @@ void TaskScheduler::run()
 
     for (currentTaskIndex = 0; currentTaskIndex < tasks.size(); currentTaskIndex++) {
         currentTaskProgress = std::make_unique<double>(0.0);
-        tasks[currentTaskIndex](currentTaskProgress);
+        TaskResult result = tasks[currentTaskIndex](currentTaskProgress);
+
+        if (!result.success) {
+            m_hasAnyTaskFailed = true;
+            m_failureReason = result.message;
+            break;
+        }
+
         *currentTaskProgress = std::min(1.0, *currentTaskProgress);
         overallProgress = getProgress();
     }

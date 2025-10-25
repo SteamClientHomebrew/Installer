@@ -82,20 +82,116 @@ void UpdateProgressEasing()
     }
 }
 
-void DownloadReleaseAssets(std::unique_ptr<double>& progress, const nlohmann::json& releaseInfo, const nlohmann::json& osReleaseInfo)
+std::vector<BYTE> HexStringToBytes(const std::string& hex)
+{
+    std::vector<BYTE> bytes;
+    if (hex.length() % 2 != 0)
+        return bytes;
+
+    bytes.reserve(hex.length() / 2);
+
+    for (size_t i = 0; i < hex.length(); i += 2) {
+        std::string byteString = hex.substr(i, 2);
+        char* end;
+        unsigned long byte = strtoul(byteString.c_str(), &end, 16);
+        if (end != byteString.c_str() + 2)
+            return std::vector<BYTE>();
+        bytes.push_back(static_cast<BYTE>(byte));
+    }
+
+    return bytes;
+}
+
+bool SecureCompareBytes(const BYTE* a, const BYTE* b, size_t length)
+{
+    int diff = 0;
+    for (size_t i = 0; i < length; ++i) {
+        diff |= a[i] ^ b[i];
+    }
+    return diff == 0;
+}
+
+bool VerifyDownloadSignature(const std::string& file, const std::string& expected_hex)
+{
+    std::vector<BYTE> expected_hash = HexStringToBytes(expected_hex);
+    if (expected_hash.empty() || expected_hash.size() != 32) {
+        return false;
+    }
+
+    FILE* f = fopen(file.c_str(), "rb");
+    if (!f) {
+        return false;
+    }
+
+    BCRYPT_ALG_HANDLE hAlg = NULL;
+    BCRYPT_HASH_HANDLE hHash = NULL;
+    DWORD hashLen = 0, resultLen = 0;
+    BYTE hash[32] = { 0 };
+    bool success = false;
+
+    if (BCryptOpenAlgorithmProvider(&hAlg, BCRYPT_SHA256_ALGORITHM, NULL, 0) != 0)
+        goto cleanup;
+
+    if (BCryptGetProperty(hAlg, BCRYPT_HASH_LENGTH, (PUCHAR)&hashLen, sizeof(hashLen), &resultLen, 0) != 0)
+        goto cleanup;
+
+    if (hashLen != 32)
+        goto cleanup;
+
+    if (BCryptCreateHash(hAlg, &hHash, NULL, 0, NULL, 0, 0) != 0)
+        goto cleanup;
+
+    BYTE buffer[4096];
+    size_t bytesRead;
+    while ((bytesRead = fread(buffer, 1, sizeof(buffer), f)) > 0) {
+        if (BCryptHashData(hHash, buffer, (ULONG)bytesRead, 0) != 0)
+            goto cleanup;
+    }
+
+    if (ferror(f))
+        goto cleanup;
+
+    if (BCryptFinishHash(hHash, hash, hashLen, 0) != 0)
+        goto cleanup;
+
+    success = SecureCompareBytes(hash, expected_hash.data(), hashLen);
+
+cleanup:
+    if (hHash)
+        BCryptDestroyHash(hHash);
+    if (hAlg)
+        BCryptCloseAlgorithmProvider(hAlg, 0);
+    if (f)
+        fclose(f);
+
+    return success;
+}
+
+TaskScheduler::TaskResult DownloadReleaseAssets(std::unique_ptr<double>& progress, const nlohmann::json& releaseInfo, const nlohmann::json& osReleaseInfo)
 {
     /** Update the progress text */
     statusText = "Downloading Millennium...";
 
     const auto fileSize = osReleaseInfo["size"].get<double>();
     const auto downloadUrl = osReleaseInfo["browser_download_url"].get<std::string>();
+    const auto expectedSignature = osReleaseInfo["digest"].get<std::string>();
     /** Download to the temp directory */
     const auto fileName = std::filesystem::temp_directory_path() / osReleaseInfo["name"].get<std::string>();
 
-    Http::downloadFile(downloadUrl, fileName.string(), fileSize, [&progress](double downloaded, double total) { *progress = downloaded / total; }, true);
+    if (!Http::downloadFile(downloadUrl, fileName.string(), fileSize, [&progress](double downloaded, double total) { *progress = downloaded / total; }, true)) {
+        std::cout << "Download failed" << std::endl;
+        return { false, "Failed to download release assets." };
+    }
+
+    if (!VerifyDownloadSignature(fileName.string(), expectedSignature.substr(7))) {
+        return { false, "Downloaded file signature does not match expected signature." };
+    }
+
+    return { true, "success" };
 }
 
-void InstallReleaseAssets(std::unique_ptr<double>& progress, const nlohmann::json& releaseInfo, const nlohmann::json& osReleaseInfo, const std::string& steamPath)
+TaskScheduler::TaskResult InstallReleaseAssets(std::unique_ptr<double>& progress, const nlohmann::json& releaseInfo, const nlohmann::json& osReleaseInfo,
+                                               const std::string& steamPath)
 {
     /** Update the progress text */
     statusText = "Installing Millennium...";
@@ -104,6 +200,7 @@ void InstallReleaseAssets(std::unique_ptr<double>& progress, const nlohmann::jso
     double currentFileProgress = 0.0;
 
     ExtractZippedArchive(fileName.string().c_str(), steamPath.c_str(), progress.get(), &currentFileProgress);
+    return { true, "success" };
 }
 
 std::atomic<bool> hasTaskSchedulerFinished{ false };
@@ -132,9 +229,42 @@ void StartInstaller(std::string steamPath, nlohmann::json& releaseInfo, nlohmann
     OnFinishInstall();
 }
 
+void RenderFailed(float xPos, const std::string& reason)
+{
+    ImGuiIO& io = GetIO();
+    ImGuiViewport* viewport = GetMainViewport();
+
+    const char* text = "Failed to install Millennium 😢";
+    const char* subDescription = "View Troubleshooting Guide 🔗";
+
+    PushFont(io.Fonts->Fonts[1]);
+    SetCursorPos({ xPos + (viewport->Size.x) / 2 - (CalcTextSize(text).x / 2), viewport->Size.y / 2 - ScaleY(55) });
+    Text(text);
+    PopFont();
+
+    PushStyleColor(ImGuiCol_Text, ImVec4(0.4f, 0.4f, 0.4f, 1.0f));
+    SetCursorPos({ xPos + (viewport->Size.x) / 2 - (CalcTextSize(reason.c_str()).x / 2), viewport->Size.y / 2 - ScaleY(15) });
+    Text(reason.c_str());
+    PopStyleColor();
+
+    PushStyleColor(ImGuiCol_Text, ImVec4(0.408f, 0.525f, 0.91f, 1.0f));
+    SetCursorPos({ xPos + (viewport->Size.x) / 2 - (CalcTextSize(subDescription).x / 2), viewport->Size.y / 2 + ScaleY(20) });
+    Text(subDescription);
+    PopStyleColor();
+
+    if (IsItemHovered()) {
+        SetMouseCursor(ImGuiMouseCursor_Hand);
+    }
+    if (IsItemClicked()) {
+        OpenUrl("https://docs.steambrew.app/users/getting-started/troubleshooting");
+    }
+}
+
 const void RenderInstaller(std::shared_ptr<RouterNav> router, float xPos)
 {
     progress = scheduler->getProgress();
+    bool hasFailed = scheduler->hasFailed();
+    std::string failureReason = scheduler->getFailureReason();
 
     router->setCanGoBack(false);
     UpdateProgressEasing();
@@ -155,45 +285,52 @@ const void RenderInstaller(std::shared_ptr<RouterNav> router, float xPos)
     static const int spinnerSize = ScaleX(14);
     static const int progressBarWidth = ScaleX(300);
 
-    if (!shouldRenderCompleteModal) {
-        // router->setCanGoBack(true);
-        SetCursorPos({ xPos + (viewport->Size.x / 2) - spinnerSize, (viewport->Size.y / 2) - 50 });
-        {
-            Spinner<SpinnerTypeT::e_st_ang>("SpinnerAngNoBg", Radius{ spinnerSize }, Thickness{ ScaleX(3) }, Color{ ImColor(255, 255, 255, 255) },
-                                            BgColor{ ImColor(255, 255, 255, 0) }, Speed{ 6 }, Angle{ IM_PI }, Mode{ 0 });
-        }
-        SetCursorPos({ xPos + ((viewport->Size.x - progressBarWidth) / 2), viewport->Size.y / 2 + ScaleY(60) });
-        {
-            ProgressBar(easedProgress, { progressBarWidth, ScaleY(4.0f) }, "##ProgressBar");
-        }
-
-        SetCursorPos({ xPos + (viewport->Size.x) / 2 - (CalcTextSize(statusText.c_str()).x / 2), viewport->Size.y / 2 + ScaleY(15) });
-        Text(statusText.c_str());
+    if (hasFailed) {
+        hasTaskSchedulerFinished.store(true);
+        easedProgress = 1.0f;
+        RenderFailed(xPos, failureReason);
     } else {
-        const char* text = "You're all set!  Thanks for using Millennium 💖";
-        const char* description = "If you're new here, see further instructions when Steam® starts.";
-        const char* subDescription = "View Documentation 🔗";
 
-        PushFont(io.Fonts->Fonts[1]);
-        SetCursorPos({ xPos + (viewport->Size.x) / 2 - (CalcTextSize(text).x / 2), viewport->Size.y / 2 - ScaleY(55) });
-        Text(text);
-        PopFont();
+        if (!shouldRenderCompleteModal) {
+            // router->setCanGoBack(true);
+            SetCursorPos({ xPos + (viewport->Size.x / 2) - spinnerSize, (viewport->Size.y / 2) - 50 });
+            {
+                Spinner<SpinnerTypeT::e_st_ang>("SpinnerAngNoBg", Radius{ spinnerSize }, Thickness{ ScaleX(3) }, Color{ ImColor(255, 255, 255, 255) },
+                                                BgColor{ ImColor(255, 255, 255, 0) }, Speed{ 6 }, Angle{ IM_PI }, Mode{ 0 });
+            }
+            SetCursorPos({ xPos + ((viewport->Size.x - progressBarWidth) / 2), viewport->Size.y / 2 + ScaleY(60) });
+            {
+                ProgressBar(easedProgress, { progressBarWidth, ScaleY(4.0f) }, "##ProgressBar");
+            }
 
-        PushStyleColor(ImGuiCol_Text, ImVec4(0.4f, 0.4f, 0.4f, 1.0f));
-        SetCursorPos({ xPos + (viewport->Size.x) / 2 - (CalcTextSize(description).x / 2), viewport->Size.y / 2 - ScaleY(15) });
-        Text(description);
-        PopStyleColor();
+            SetCursorPos({ xPos + (viewport->Size.x) / 2 - (CalcTextSize(statusText.c_str()).x / 2), viewport->Size.y / 2 + ScaleY(15) });
+            Text(statusText.c_str());
+        } else {
+            const char* text = "You're all set! Thanks for using Millennium 💖";
+            const char* description = "If you're new here, see further instructions when Steam® starts.";
+            const char* subDescription = "View Documentation 🔗";
 
-        PushStyleColor(ImGuiCol_Text, ImVec4(0.408f, 0.525f, 0.91f, 1.0f));
-        SetCursorPos({ xPos + (viewport->Size.x) / 2 - (CalcTextSize(subDescription).x / 2), viewport->Size.y / 2 + ScaleY(20) });
-        Text(subDescription);
-        PopStyleColor();
+            PushFont(io.Fonts->Fonts[1]);
+            SetCursorPos({ xPos + (viewport->Size.x) / 2 - (CalcTextSize(text).x / 2), viewport->Size.y / 2 - ScaleY(55) });
+            Text(text);
+            PopFont();
 
-        if (IsItemHovered()) {
-            SetMouseCursor(ImGuiMouseCursor_Hand);
-        }
-        if (IsItemClicked()) {
-            OpenUrl("https://docs.steambrew.app/users/getting-started");
+            PushStyleColor(ImGuiCol_Text, ImVec4(0.4f, 0.4f, 0.4f, 1.0f));
+            SetCursorPos({ xPos + (viewport->Size.x) / 2 - (CalcTextSize(description).x / 2), viewport->Size.y / 2 - ScaleY(15) });
+            Text(description);
+            PopStyleColor();
+
+            PushStyleColor(ImGuiCol_Text, ImVec4(0.408f, 0.525f, 0.91f, 1.0f));
+            SetCursorPos({ xPos + (viewport->Size.x) / 2 - (CalcTextSize(subDescription).x / 2), viewport->Size.y / 2 + ScaleY(20) });
+            Text(subDescription);
+            PopStyleColor();
+
+            if (IsItemHovered()) {
+                SetMouseCursor(ImGuiMouseCursor_Hand);
+            }
+            if (IsItemClicked()) {
+                OpenUrl("https://docs.steambrew.app/users");
+            }
         }
     }
 
