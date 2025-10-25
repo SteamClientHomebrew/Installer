@@ -131,7 +131,7 @@ const void RenderInstallPrompt(std::shared_ptr<RouterNav> router, float xPos)
     BeginChild("##PromptContainer", ImVec2(PromptContainerWidth, PromptContainerHeight), false);
     {
         PushFont(io.Fonts->Fonts[1]);
-        Text("Install Millennium 💫");
+        Text(fmt::format("Install Millennium {} 💫", releaseInfo["tag_name"].get<std::string>()).c_str());
         PopFont();
 
         Spacing();

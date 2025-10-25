@@ -17,7 +17,8 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mwindows")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w -fpermissive -fno-diagnostics-show-option")
 
 if (CMAKE_BUILD_TYPE STREQUAL "Release")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -fvisibility=hidden -s")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Os -fvisibility=hidden -s -flto -fdata-sections -ffunction-sections")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--gc-sections -Wl,--strip-all -flto")
     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS OFF)
 elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g3 -fvisibility=hidden")
@@ -29,6 +30,16 @@ add_compile_definitions(
   FMT_HEADER_ONLY
   IMGUI_USE_WCHAR32
 )
+
+# Additional size optimizations for release builds
+if (CMAKE_BUILD_TYPE STREQUAL "Release")
+    add_compile_definitions(
+        IMGUI_DISABLE_DEMO_WINDOWS
+        IMGUI_DISABLE_DEBUG_TOOLS
+        IMGUI_DISABLE_STYLE_EDITOR
+        NDEBUG
+    )
+endif()
 
 # Define source files
 set(IMGUI_DIR "../..")
@@ -51,7 +62,6 @@ set(SOURCES
     src/installer/task_scheduler.cc
     src/installer/unzip.cc
     vendor/imgui/src/imgui.cpp
-    vendor/imgui/src/imgui_demo.cpp
     vendor/imgui/src/imgui_draw.cpp
     vendor/imgui/src/imgui_tables.cpp
     vendor/imgui/src/imgui_widgets.cpp
@@ -76,7 +86,6 @@ if (WINDRES)
     add_dependencies(${PROJECT_NAME} resource)
     target_link_libraries(${PROJECT_NAME} PRIVATE ${CMAKE_BINARY_DIR}/version.o)
 endif()
-
 
 # Include directories
 include_directories(include)
@@ -136,8 +145,16 @@ elseif(WIN32)
 endif()
 
 # Add compilation flags
-target_compile_options(${PROJECT_NAME} PRIVATE
-    -g
-    -Wall
-    -Wformat
-)
+if (CMAKE_BUILD_TYPE STREQUAL "Release")
+    target_compile_options(${PROJECT_NAME} PRIVATE
+        -Wall
+        -Wformat
+        -DNDEBUG
+    )
+else()
+    target_compile_options(${PROJECT_NAME} PRIVATE
+        -g
+        -Wall
+        -Wformat
+    )
+endif()

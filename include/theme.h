@@ -38,7 +38,7 @@ void SetupColorScheme()
     ImGuiStyle& style = GetStyle();
     ImVec4* colors = style.Colors;
 
-    colors[ImGuiCol_WindowBg] = ImVec4(0.067f, 0.071f, 0.078f, 0.8f);
+    colors[ImGuiCol_WindowBg] = ImVec4(0.067f, 0.071f, 0.078f, 1.0f);
     colors[ImGuiCol_Border] = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
     colors[ImGuiCol_PlotHistogram] = ImVec4(0.4f, 0.4f, 0.4f, 1.0f);
 

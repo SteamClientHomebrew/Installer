@@ -262,8 +262,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     SetupDPI(window);
 
 #ifdef _WIN32
-    HWND hwnd = glfwGetWin32Window(window);
-    RenderBlur(hwnd);
+    // HWND hwnd = glfwGetWin32Window(window);
+    // RenderBlur(hwnd);
 #endif
 
     // Load image from memory
