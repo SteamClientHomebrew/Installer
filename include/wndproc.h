@@ -29,8 +29,7 @@
  */
 
 #pragma once
-#include <minwindef.h>
-#include <wtypes.h>
+#include <windows.h>
 #include <GLFW/glfw3.h>
 #include <memory>
 #include <router.h>

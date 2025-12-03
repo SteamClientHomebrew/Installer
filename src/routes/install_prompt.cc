@@ -40,13 +40,9 @@
 #include <dpi.h>
 #include <unordered_map>
 #include <components.h>
-#include <windows.h>
-#include <shobjidl.h>
-#include <commdlg.h>
 #include <filesystem>
 #include <nlohmann/json.hpp>
 #include <http.h>
-#include <fmt/format.h>
 #include <util.h>
 #include <imgui_markdown.h>
 #include <mini/ini.h>
@@ -57,48 +53,112 @@ const CheckBoxState* checkForUpdates;
 const CheckBoxState* automaticallyInstallUpdates;
 
 static ImGui::MarkdownConfig mdConfig;
-nlohmann::json releaseInfo, osReleaseInfo;
+nlohmann::json releasesList, selectedRelease, osReleaseInfo;
+
+static void UpdateSelectedRelease(const std::string& tag)
+{
+    if (releasesList.is_null())
+        return;
+
+    for (const auto& release : releasesList) {
+        if (!release.contains("tag_name"))
+            continue;
+        if (release["tag_name"].get<std::string>() != tag)
+            continue;
+
+        selectedRelease = release;
+
+        for (const auto& asset : selectedRelease["assets"]) {
+            std::string assetName = asset["name"];
+#ifdef WIN32
+            if (assetName == std::format("millennium-{}-windows-x86_64.zip", tag)) {
+                osReleaseInfo = asset;
+                return;
+            }
+#elif __linux__
+            if (assetName == std::format("millennium-{}-linux-x86_64.tar.gz", tag)) {
+                osReleaseInfo = asset;
+                return;
+            }
+#else
+            osReleaseInfo = asset;
+            return;
+#endif
+        }
+
+        return;
+    }
+}
 
 const bool FetchVersionInfo()
 {
-    const auto response = Http::Get("https://api.github.com/repos/SteamClientHomebrew/Millennium/releases", false);
+    // fetch all pages of releases from GitHub (per_page=100)
+    releasesList = nlohmann::json::array();
+    int page = 1;
+    for (;;) {
+        const auto url = std::format("https://api.github.com/repos/SteamClientHomebrew/Millennium/releases?per_page=100&page={}", page);
+        const auto response = Http::Get(url.c_str(), false);
 
-    if (response.empty()) {
-        ShowMessageBox("Whoops!", "Failed to fetch version information from the GitHub API! Make sure you have a valid internet connection.", Error);
-        return false;
+        if (response.empty()) {
+            if (page == 1) {
+                ShowMessageBox("Whoops!", "Failed to fetch version information from the GitHub API! Make sure you have a valid internet connection.", Error);
+                return false;
+            }
+            break;
+        }
+
+        try {
+            auto pageJson = nlohmann::json::parse(response);
+            if (!pageJson.is_array() || pageJson.empty())
+                break;
+
+            // append to releasesList
+            for (const auto& r : pageJson)
+                releasesList.push_back(r);
+        } catch (const nlohmann::json::exception& e) {
+            std::cerr << "JSON parse error: " << e.what() << std::endl;
+            ShowMessageBox("Whoops!", "Failed to parse version information from the GitHub API! Please wait a moment and try again, you're likely rate limited.", Error);
+            return false;
+        }
+
+        page += 1;
+    }
+
+    // choose default selectedRelease: prefer latest non-prerelease, fall back to first release
+    selectedRelease = nlohmann::json();
+    for (const auto& release : releasesList) {
+        if (release.contains("prerelease") && release["prerelease"].is_boolean() && release["prerelease"].get<bool>() == false) {
+            selectedRelease = release;
+            break;
+        }
+    }
+    if (selectedRelease.is_null() && !releasesList.empty()) {
+        selectedRelease = releasesList.front();
     }
 
     bool hasFoundReleaseInfo = false;
-
-    try {
-        releaseInfo = nlohmann::json::parse(response);
-        // Find the latest non-prerelease version
-        for (const auto& release : releaseInfo) {
-            if (release.contains("prerelease") && release["prerelease"].is_boolean() && release["prerelease"].get<bool>() == false) {
-                releaseInfo = release;
-                for (const auto& asset : releaseInfo["assets"]) {
-                    std::string assetName = asset["name"];
-                    std::string releaseTag = releaseInfo["tag_name"];
-
+    if (!selectedRelease.is_null()) {
+        std::string releaseTag = selectedRelease.contains("tag_name") ? selectedRelease["tag_name"].get<std::string>() : std::string();
+        for (const auto& asset : selectedRelease["assets"]) {
+            std::string assetName = asset["name"];
 #ifdef WIN32
-                    if (assetName == fmt::format("millennium-{}-windows-x86_64.zip", releaseTag))
-#elif __linux__
-                    if (assetName == fmt::format("millennium-{}-linux-x86_64.tar.gz", release["tag_name"].get<std::string>()))
-#endif
-                    {
-                        osReleaseInfo = asset;
-                        hasFoundReleaseInfo = true;
-                        break;
-                    }
-                }
-
+            if (assetName == std::format("millennium-{}-windows-x86_64.zip", releaseTag)) {
+                osReleaseInfo = asset;
+                hasFoundReleaseInfo = true;
                 break;
             }
+#elif __linux__
+            if (assetName == std::format("millennium-{}-linux-x86_64.tar.gz", releaseTag)) {
+                osReleaseInfo = asset;
+                hasFoundReleaseInfo = true;
+                break;
+            }
+#else
+            osReleaseInfo = asset;
+            hasFoundReleaseInfo = true;
+            break;
+#endif
         }
-    } catch (const nlohmann::json::exception& e) {
-        std::cerr << "JSON parse error: " << e.what() << std::endl;
-        ShowMessageBox("Whoops!", "Failed to parse version information from the GitHub API! Please wait a moment and try again, you're likely rate limited.", Error);
-        return false;
     }
 
     return hasFoundReleaseInfo;
@@ -131,14 +191,15 @@ const void RenderInstallPrompt(std::shared_ptr<RouterNav> router, float xPos)
     BeginChild("##PromptContainer", ImVec2(PromptContainerWidth, PromptContainerHeight), false);
     {
         PushFont(io.Fonts->Fonts[1]);
-        Text(fmt::format("Install Millennium {} 💫", releaseInfo["tag_name"].get<std::string>()).c_str());
+        Text(std::format("Install Millennium 💫").c_str());
         PopFont();
 
         Spacing();
         PushStyleColor(ImGuiCol_Text, ImVec4(0.422f, 0.425f, 0.441f, 1.0f));
-        TextWrapped(fmt::format("Released {} • ", ToTimeAgo(releaseInfo["published_at"].get<std::string>())).c_str());
-        SameLine(0, ScaleX(5));
-        TextColored(ImVec4(0.408f, 0.525f, 0.91f, 1.0f), "view release notes");
+        // TextWrapped(std::format("Released {} • ", ToTimeAgo(releaseInfo["published_at"].get<std::string>())).c_str());
+        // SameLine(0, ScaleX(5));
+        // TextColored(ImVec4(0.408f, 0.525f, 0.91f, 1.0f), "view release notes");
+        Text("An open source gateway to a better Steam® client experience.");
 
         if (IsItemHovered()) {
             SetMouseCursor(ImGuiMouseCursor_Hand);
@@ -147,8 +208,11 @@ const void RenderInstallPrompt(std::shared_ptr<RouterNav> router, float xPos)
         static bool hasSkippedFirstFrame = false;
 
         if (IsItemClicked()) {
-            ShellExecuteA(NULL, "open", fmt::format("https://github.com/SteamClientHomebrew/Millennium/releases/tag/{}", releaseInfo["tag_name"].get<std::string>()).c_str(), NULL,
-                          NULL, SW_SHOWNORMAL);
+            if (selectedRelease.contains("tag_name")) {
+                ShellExecuteA(NULL, "open",
+                              std::format("https://github.com/SteamClientHomebrew/Millennium/releases/tag/{}", selectedRelease["tag_name"].get<std::string>()).c_str(), NULL, NULL,
+                              SW_SHOWNORMAL);
+            }
         }
 
         Spacing();
@@ -207,7 +271,65 @@ const void RenderInstallPrompt(std::shared_ptr<RouterNav> router, float xPos)
         PopStyleColor(2);
         PopStyleVar(3);
 
-        SetCursorPosY(GetCursorPosY() + ScaleY(140));
+        Spacing();
+        Spacing();
+        PushStyleColor(ImGuiCol_Text, ImVec4(0.422f, 0.425f, 0.441f, 1.0f));
+
+        std::string currentTag = selectedRelease.contains("tag_name") ? selectedRelease["tag_name"].get<std::string>() : std::string("(none)");
+        Text("Installing Millennium version %s", currentTag.c_str());
+        SameLine(0, ScaleX(5));
+
+        const char* changeText = "change version ▾";
+        ImVec2 changeSize = CalcTextSize(changeText);
+        if (changeSize.y < GetTextLineHeight())
+            changeSize.y = GetTextLineHeight();
+
+        PushStyleColor(ImGuiCol_Text, ImVec4(0.408f, 0.525f, 0.91f, 1.0f));
+        TextUnformatted(changeText);
+        if (IsItemHovered())
+            SetMouseCursor(ImGuiMouseCursor_Hand);
+        if (IsItemClicked())
+            OpenPopup("##VersionPopup");
+
+        PopStyleColor();
+
+        ImVec2 popupPos = GetItemRectMin();
+        popupPos.y += changeSize.y + ScaleY(10);
+
+        SetNextWindowPos(popupPos);
+        PushStyleColor(ImGuiCol_Border, ImVec4(0.18f, 0.184f, 0.192f, 1.0f));
+        PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(ScaleX(15), ScaleY(15)));
+        PushStyleVar(ImGuiStyleVar_PopupRounding, 6);
+        PushStyleColor(ImGuiCol_PopupBg, ImVec4(0.1f, 0.1f, 0.11f, 1.0f));
+
+        SetNextWindowSize(ImVec2(ScaleX(200), ScaleY(300)));
+
+        if (BeginPopup("##VersionPopup")) {
+            if (!releasesList.is_null()) {
+                for (const auto& release : releasesList) {
+                    if (!release.contains("tag_name"))
+                        continue;
+                    std::string tag = release["tag_name"].get<std::string>();
+                    bool is_selected = (selectedRelease.contains("tag_name") && selectedRelease["tag_name"].get<std::string>() == tag);
+                    PushStyleVar(ImGuiStyleVar_FrameRounding, 6);
+                    if (Selectable(std::format("  {}  ", tag).c_str(), is_selected)) {
+                        UpdateSelectedRelease(tag);
+                        CloseCurrentPopup();
+                    }
+                    PopStyleVar();
+                    if (is_selected)
+                        SetItemDefaultFocus();
+                }
+            }
+            EndPopup();
+        }
+
+        PopStyleVar(2);
+        PopStyleColor(2);
+        Spacing();
+        Spacing();
+
+        SetCursorPosY(GetCursorPosY() + ScaleY(110));
         PushStyleColor(ImGuiCol_Text, ImVec4(0.422f, 0.425f, 0.441f, 1.0f));
         PushStyleColor(ImGuiCol_Text, ImVec4(0.761, 0.569, 0.149, 1.0f));
 
@@ -229,7 +351,7 @@ const void RenderInstallPrompt(std::shared_ptr<RouterNav> router, float xPos)
         PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(currentColor, currentColor, currentColor, 1.0f));
 
         if (Button("Install", ImVec2(xPos + GetContentRegionAvail().x, GetContentRegionAvail().y))) {
-            std::thread(StartInstaller, steamPath, std::ref(releaseInfo), std::ref(osReleaseInfo)).detach();
+            std::thread(StartInstaller, steamPath, std::ref(selectedRelease), std::ref(osReleaseInfo)).detach();
             router->navigateNext();
         }
 

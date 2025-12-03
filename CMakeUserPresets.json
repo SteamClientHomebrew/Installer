@@ -6,35 +6,28 @@
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/build",
       "hidden": true,
-      "architecture": {
-        "value": "x86",
-        "strategy": "external"
-      },
       "cacheVariables": {
         "CMAKE_TOOLCHAIN_FILE": "./vendor/vcpkg/scripts/buildsystems/vcpkg.cmake",
-        "CMAKE_CXX_FLAGS": "-static-libstdc++ -static-libgcc -static -lpthread"
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "VCPKG_TARGET_TRIPLET": "x64-windows-static",
+        "CMAKE_CXX_COMPILER": "cl.exe",
+        "CMAKE_C_COMPILER": "cl.exe"
       }
     },
     {
       "name": "debug",
       "inherits": "default",
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/debug",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "VCPKG_TARGET_TRIPLET": "x86-mingw-static",
-        "VCPKG_HOST_TRIPLET": "x64-mingw-static"
+        "CMAKE_BUILD_TYPE": "Debug"
       }
     },
     {
       "name": "release",
       "inherits": "default",
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/release",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "VCPKG_TARGET_TRIPLET": "x86-mingw-static",
-        "VCPKG_HOST_TRIPLET": "x64-mingw-static"
+        "CMAKE_CXX_FLAGS_RELEASE": "/O1 /GL /GF /Gy /DNDEBUG",
+        "CMAKE_SHARED_LINKER_FLAGS_RELEASE": "/LTCG /OPT:REF /OPT:ICF /DEBUG:NONE"
       }
     }
   ]

@@ -39,7 +39,6 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
-#include <wtypes.h>
 #include <memory.h>
 #include <atomic>
 #include <animate.h>
@@ -47,7 +46,6 @@
 #include <filesystem>
 #include <router.h>
 #include <iostream>
-#include <algorithm>
 #include <theme.h>
 #include <wndproc.h>
 #include <imspinner.h>
@@ -55,10 +53,8 @@
 #include <components.h>
 #include <dpi.h>
 #include <renderer.h>
-#include <fmt/format.h>
 #include <stb_image.h>
 #include <util.h>
-#include <dwmapi.h>
 
 using namespace ImGui;
 
@@ -80,7 +76,7 @@ static void GLFWErrorCallback(int error, const char* description)
         return;
     }
 
-    MessageBoxA(NULL, fmt::format("An error occurred.\n\nGLFW Error {}: {}", error, description).c_str(), "Whoops!", MB_ICONERROR);
+    MessageBoxA(NULL, std::format("An error occurred.\n\nGLFW Error {}: {}", error, description).c_str(), "Whoops!", MB_ICONERROR);
 }
 
 void WindowRefreshCallback(GLFWwindow* window)
@@ -106,15 +102,15 @@ void SetupImGuiScaling(GLFWwindow* window)
     cfg.MergeMode = true;
     cfg.FontLoaderFlags |= ImGuiFreeTypeLoaderFlags_LoadColor;
 
+    ImFontConfig mem_cfg;
+    mem_cfg.FontDataOwnedByAtlas = false;
+
     io.Fonts->Clear();
-    io.Fonts->AddFontFromMemoryTTF((void*)GeistVariable, sizeof(GeistVariable), 16.0f * scaleFactor);
-    if (std::filesystem::exists(fontPath)) {
-        io.Fonts->AddFontFromFileTTF(fontPath, 14.0f * scaleFactor, &cfg);
-    }
-    io.Fonts->AddFontFromMemoryTTF((void*)Geist_Bold, sizeof(Geist_Bold), 18.0f * scaleFactor);
-    if (std::filesystem::exists(fontPath)) {
-        io.Fonts->AddFontFromFileTTF(fontPath, 14.0f * scaleFactor, &cfg);
-    }
+    io.Fonts->AddFontFromMemoryTTF((void*)GeistVariable, sizeof(GeistVariable), 16.0f * scaleFactor, &mem_cfg);
+    if (std::filesystem::exists(fontPath)) io.Fonts->AddFontFromFileTTF(fontPath, 14.0f * scaleFactor, &cfg);
+    
+    io.Fonts->AddFontFromMemoryTTF((void*)Geist_Bold, sizeof(Geist_Bold), 18.0f * scaleFactor, &mem_cfg);
+    if (std::filesystem::exists(fontPath)) io.Fonts->AddFontFromFileTTF(fontPath, 14.0f * scaleFactor, &cfg);
 
     /** Explicitly set FreeType as the font loader to ensure color emoji support */
     io.Fonts->SetFontLoader(ImGuiFreeType::GetFontLoader());
@@ -202,14 +198,15 @@ void RenderBlur(HWND hwnd)
         ULONG ul;
     };
 
-    const HINSTANCE user32Handle = LoadLibrary("user32.dll");
+    const HINSTANCE user32Handle = LoadLibraryA("user32.dll");
 
     if (user32Handle) {
         typedef BOOL(WINAPI * pSetWindowCompositionAttribute)(HWND, WINCOMPATTRDATA*);
-        const pSetWindowCompositionAttribute SetWindowCompositionAttribute = (pSetWindowCompositionAttribute)GetProcAddress(user32Handle, "SetWindowCompositionAttribute");
+        const pSetWindowCompositionAttribute SetWindowCompositionAttribute =
+            reinterpret_cast<pSetWindowCompositionAttribute>(GetProcAddress(user32Handle, "SetWindowCompositionAttribute"));
 
         if (SetWindowCompositionAttribute) {
-            ACCENTPOLICY policy = { 4, 0, 0, 0x99111214 };
+            ACCENTPOLICY policy = { 4, 0, 0, static_cast<int>(0x99111214) };
             WINCOMPATTRDATA data = { 19, &policy, sizeof(ACCENTPOLICY) };
             SetWindowCompositionAttribute(hwnd, &data);
         }
@@ -219,12 +216,12 @@ void RenderBlur(HWND hwnd)
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-    if (IsDebuggerPresent()) {
-        AllocConsole();
-        FILE* file;
-        freopen_s(&file, "CONOUT$", "w", stdout);
-        freopen_s(&file, "CONOUT$", "w", stderr);
-    }
+     if (IsDebuggerPresent()) {
+         AllocConsole();
+         FILE* file;
+         freopen_s(&file, "CONOUT$", "w", stdout);
+         freopen_s(&file, "CONOUT$", "w", stderr);
+     }
 
     MMRESULT result = timeBeginPeriod(1);
 

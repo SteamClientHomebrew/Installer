@@ -35,7 +35,6 @@
 #include <curl/curl.h>
 #include <iostream>
 #include "components.h"
-#include <fmt/core.h>
 
 static size_t WriteByteCallback(char* ptr, size_t size, size_t nmemb, std::string* data)
 {
@@ -136,7 +135,7 @@ static bool downloadFile(const std::string& url, const std::string& outputPath, 
     FILE* fp = fopen(outputPath.c_str(), "wb");
     if (!fp) {
         std::cerr << "Failed to open output file: " << outputPath << std::endl;
-        ShowMessageBox("Whoops!", fmt::format("Failed to open file to write Millennium into: '{}'", outputPath), Error);
+        ShowMessageBox("Whoops!", std::format("Failed to open file to write Millennium into: '{}'", outputPath), Error);
         curl_easy_cleanup(curl);
         return false;
     }
@@ -165,7 +164,7 @@ static bool downloadFile(const std::string& url, const std::string& outputPath, 
     fclose(fp);
 
     if (res != CURLE_OK) {
-        ShowMessageBox("Whoops!", fmt::format("Failed to download file from URL: '{}'", url), Error);
+        ShowMessageBox("Whoops!", std::format("Failed to download file from URL: '{}'", url), Error);
         return false;
     }
     return true;

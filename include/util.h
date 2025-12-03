@@ -29,16 +29,18 @@
  */
 
 #pragma once
-#include <string>
 #include <windows.h>
-#include <iostream>
-#include <shellapi.h>
-#include <fmt/core.h>
-#include <optional>
-#include <filesystem>
 #include <shobjidl.h>
 #include <tlhelp32.h>
+#include <string>
+#include <iostream>
+#include <optional>
+#include <filesystem>
+#include <cwchar>
 #include "components.h"
+#include <cwctype>
+#include <vector>
+#include <system_error>
 
 inline std::string BytesToReadableFormat(float bytes)
 {
@@ -68,11 +70,11 @@ static ColorScheme GetWindowsColorScheme()
     DWORD value;
     DWORD size = sizeof(DWORD);
 
-    if (RegOpenKeyEx(HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize", 0, KEY_READ, &key) != ERROR_SUCCESS) {
+    if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize", 0, KEY_READ, &key) != ERROR_SUCCESS) {
         return Dark;
     }
 
-    if (RegQueryValueEx(key, "SystemUsesLightTheme", nullptr, nullptr, (LPBYTE)&value, &size) != ERROR_SUCCESS) {
+    if (RegQueryValueExW(key, L"SystemUsesLightTheme", nullptr, nullptr, (LPBYTE)&value, &size) != ERROR_SUCCESS) {
         RegCloseKey(key);
         return Dark;
     }
@@ -120,7 +122,15 @@ static std::string SanitizeDirectoryName(const std::string& path)
         pos = delimPos + 1;
     }
 
-    std::string correctPath(result.begin(), result.end());
+    // Use WideCharToMultiByte for proper conversion
+    if (result.empty()) {
+        return {};
+    }
+
+    int size_needed = WideCharToMultiByte(CP_UTF8, 0, result.c_str(), (int)result.length(), NULL, 0, NULL, NULL);
+    std::string correctPath(size_needed, 0);
+    WideCharToMultiByte(CP_UTF8, 0, result.c_str(), (int)result.length(), &correctPath[0], size_needed, NULL, NULL);
+
     return correctPath;
 }
 
@@ -148,7 +158,7 @@ static const void OpenUrl(const char* url)
 #ifdef _WIN32
     ShellExecuteA(nullptr, "open", url, nullptr, nullptr, SW_SHOWNORMAL);
 #elif __linux__
-    system(fmt::format("xdg-open {}", url).c_str());
+    system(std::format("xdg-open {}", url).c_str());
 #endif
 }
 
@@ -247,7 +257,7 @@ static std::string ToTimeAgo(const std::string& isoTimestamp)
     auto diff = std::chrono::duration_cast<std::chrono::seconds>(now - inputTimePoint).count();
 
     // Helper lambda to handle singular/plural formatting
-    auto formatTime = [](long count, const char* unit) { return fmt::format("{} {}{}", count, unit, (count == 1 ? "" : "s")); };
+    auto formatTime = [](long count, const char* unit) { return std::format("{} {}{}", count, unit, (count == 1 ? "" : "s")); };
 
     if (diff < 60)
         return "just now";
@@ -258,25 +268,26 @@ static std::string ToTimeAgo(const std::string& isoTimestamp)
     if (diff < 2592000)
         return formatTime(diff / 86400, "day") + " ago";
     if (diff < 31536000)
-        return fmt::format("about {} ago", formatTime(diff / 2592000, "month"));
+        return std::format("about {} ago", formatTime(diff / 2592000, "month"));
 
-    return fmt::format("about {} ago", formatTime(diff / 31536000, "year"));
+    return std::format("about {} ago", formatTime(diff / 31536000, "year"));
 }
 
 static void StartSteamFromPath(std::string steamPath)
 {
     std::string steamExePath = (std::filesystem::path(steamPath) / "steam.exe").string();
 
-    STARTUPINFO si = { 0 };
+    STARTUPINFOW si = { 0 };
     PROCESS_INFORMATION pi = { 0 };
 
     si.cb = sizeof(si);
 
-    char cmd[MAX_PATH];
-    strcpy_s(cmd, steamExePath.c_str());
+    std::wstring wSteamExePath(steamExePath.begin(), steamExePath.end());
+    std::vector<wchar_t> cmd(wSteamExePath.begin(), wSteamExePath.end());
+    cmd.push_back(L'\0');
 
-    if (!CreateProcess(NULL, cmd, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
-        ShowMessageBox("Whoops!", fmt::format("Failed to start Steam. Please check your installation path. Error code: {}", GetLastError()), Error);
+    if (!CreateProcessW(NULL, cmd.data(), NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
+        ShowMessageBox("Whoops!", std::format("Failed to start Steam. Please check your installation path. Error code: {}", GetLastError()), Error);
         return;
     }
 
@@ -295,12 +306,12 @@ static bool KillSteamProcess()
         return false;
     }
 
-    PROCESSENTRY32 pe;
-    pe.dwSize = sizeof(PROCESSENTRY32);
+    PROCESSENTRY32W pe;
+    pe.dwSize = sizeof(PROCESSENTRY32W);
 
-    if (Process32First(hSnapshot, &pe)) {
+    if (Process32FirstW(hSnapshot, &pe)) {
         do {
-            if (_stricmp(pe.szExeFile, "steam.exe") == 0) {
+            if (_wcsicmp(pe.szExeFile, L"steam.exe") == 0) {
                 HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, FALSE, pe.th32ProcessID);
                 if (hProcess) {
                     if (TerminateProcess(hProcess, 0)) {
@@ -308,16 +319,16 @@ static bool KillSteamProcess()
                         CloseHandle(hSnapshot);
                         return true;
                     } else {
-                        ShowMessageBox("Whoops!", fmt::format("Failed to terminate process. Error: {}", GetLastError()), Error);
+                        ShowMessageBox("Whoops!", std::format("Failed to terminate process. Error: {}", GetLastError()), Error);
                     }
                     CloseHandle(hProcess);
                 } else {
-                    ShowMessageBox("Whoops!", fmt::format("Failed to open process. Error: {}", GetLastError()), Error);
+                    ShowMessageBox("Whoops!", std::format("Failed to open process. Error: {}", GetLastError()), Error);
                 }
             }
-        } while (Process32Next(hSnapshot, &pe));
+        } while (Process32NextW(hSnapshot, &pe));
     } else {
-        ShowMessageBox("Whoops!", fmt::format("Failed to retrieve process list. Error: {}", GetLastError()), Error);
+        ShowMessageBox("Whoops!", std::format("Failed to retrieve process list. Error: {}", GetLastError()), Error);
     }
 
     CloseHandle(hSnapshot);
@@ -326,36 +337,80 @@ static bool KillSteamProcess()
 
 static uint64_t GetFolderSize(const std::filesystem::path& path, std::error_code& ec)
 {
-    if (!std::filesystem::exists(path, ec)) {
+    ec.clear();
+    std::wstring root = path.wstring();
+
+    DWORD attrs = GetFileAttributesW(root.c_str());
+    if (attrs == INVALID_FILE_ATTRIBUTES) {
+        ec = std::error_code(static_cast<int>(GetLastError()), std::system_category());
         return 0;
     }
 
-    std::error_code file_ec;
-    auto metadata = std::filesystem::status(path, file_ec);
-    if (file_ec) {
-        return 0;
+    if (!(attrs & FILE_ATTRIBUTE_DIRECTORY)) {
+        DWORD high = 0;
+        DWORD low = GetCompressedFileSizeW(root.c_str(), &high);
+        if (low == INVALID_FILE_SIZE && GetLastError() != NO_ERROR) {
+            ec = std::error_code(static_cast<int>(GetLastError()), std::system_category());
+            return 0;
+        }
+        return (static_cast<uint64_t>(high) << 32) | low;
     }
 
-    if (std::filesystem::is_regular_file(metadata)) {
-        return std::filesystem::file_size(path, file_ec);
-    }
+    uint64_t total = 0;
+    std::vector<std::wstring> stack;
+    stack.push_back(root);
 
-    uint64_t size = 0;
-    for (const auto& entry : std::filesystem::directory_iterator(path, std::filesystem::directory_options::skip_permission_denied, ec)) {
-        if (ec) {
+    while (!stack.empty()) {
+        std::wstring current = std::move(stack.back());
+        stack.pop_back();
+
+        std::wstring search = current;
+        if (!search.empty() && search.back() != L'\\' && search.back() != L'/') {
+            search.push_back(L'\\');
+        }
+        search += L"*";
+
+        WIN32_FIND_DATAW fd;
+        HANDLE hFind = FindFirstFileExW(search.c_str(), FindExInfoBasic, &fd, FindExSearchNameMatch, NULL, FIND_FIRST_EX_LARGE_FETCH);
+        if (hFind == INVALID_HANDLE_VALUE) {
+            DWORD err = GetLastError();
+            if (err == ERROR_ACCESS_DENIED || err == ERROR_SHARING_VIOLATION || err == ERROR_PATH_NOT_FOUND) {
+                continue;
+            }
+            ec = std::error_code(static_cast<int>(err), std::system_category());
             continue;
         }
 
-        auto entry_metadata = std::filesystem::status(entry, file_ec);
-        if (file_ec) {
-            continue;
-        }
+        do {
+            const wchar_t* name = fd.cFileName;
+            if (wcscmp(name, L".") == 0 || wcscmp(name, L"..") == 0) {
+                continue;
+            }
 
-        if (std::filesystem::is_directory(entry_metadata)) {
-            size += GetFolderSize(entry.path(), ec);
-        } else if (std::filesystem::is_regular_file(entry_metadata)) {
-            size += std::filesystem::file_size(entry, file_ec);
-        }
+            if (fd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) {
+                continue;
+            }
+
+            std::wstring fullPath = current;
+            if (!fullPath.empty() && fullPath.back() != L'\\' && fullPath.back() != L'/') {
+                fullPath.push_back(L'\\');
+            }
+            fullPath += name;
+
+            if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+                stack.push_back(fullPath);
+            } else {
+                DWORD high = 0;
+                DWORD low = GetCompressedFileSizeW(fullPath.c_str(), &high);
+                if (low == INVALID_FILE_SIZE && GetLastError() != NO_ERROR) {
+                    continue;
+                }
+                total += (static_cast<uint64_t>(high) << 32) | low;
+            }
+        } while (FindNextFileW(hFind, &fd));
+
+        FindClose(hFind);
     }
-    return size;
+
+    return total;
 }

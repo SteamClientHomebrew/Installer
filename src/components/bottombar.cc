@@ -34,10 +34,7 @@
 #include <texture.h>
 #include <animate.h>
 #ifdef _WIN32
-#include <windows.h>
-#include <shellapi.h>
 #endif
-#include <fmt/core.h>
 #include <util.h>
 
 using namespace ImGui;
@@ -59,7 +56,7 @@ const void RenderBottomNavBar(const char* identifier, float xPos, std::function<
     PushStyleVar(ImGuiStyleVar_ChildRounding, 0.0f);
     PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.078f, 0.082f, 0.09f, 1.f));
 
-    BeginChild(fmt::format("##BottomNavBar{}", identifier).c_str(), ImVec2(viewport->Size.x, BottomNavBarHeight), true, ImGuiWindowFlags_NoScrollbar);
+    BeginChild(std::format("##BottomNavBar{}", identifier).c_str(), ImVec2(viewport->Size.x, BottomNavBarHeight), true, ImGuiWindowFlags_NoScrollbar);
     {
         SetCursorPos({ ScaleX(45), GetCursorPosY() + ScaleY(12.5) });
         Image((ImTextureID)(intptr_t)infoIconTexture, ImVec2(ScaleX(25), ScaleY(25)));
@@ -84,7 +81,7 @@ const void RenderBottomNavBar(const char* identifier, float xPos, std::function<
         Image((ImTextureID)(intptr_t)discordIconTexture, ImVec2(ScaleX(30), ScaleY(30)));
 
         static bool isDiscordButtonHovered = false;
-        float discordIconHoverTransparency = EaseInOutFloat(fmt::format("##DiscordIconHover{}", identifier).c_str(), 0.f, 1.f, isDiscordButtonHovered, 0.3f);
+        float discordIconHoverTransparency = EaseInOutFloat(std::format("##DiscordIconHover{}", identifier).c_str(), 0.f, 1.f, isDiscordButtonHovered, 0.3f);
 
         /** Check if the animation has started */
         if (discordIconHoverTransparency != 0.f) {
@@ -115,7 +112,7 @@ const void RenderBottomNavBar(const char* identifier, float xPos, std::function<
         Image((ImTextureID)(intptr_t)gtihubIconTexture, ImVec2(ScaleX(30), ScaleY(30)));
 
         static bool isGithubButtonHovered = false;
-        float githubIconHoverTransparency = EaseInOutFloat(fmt::format("##GithubIconHover{}", identifier).c_str(), 0.f, 1.f, isGithubButtonHovered, 0.3f);
+        float githubIconHoverTransparency = EaseInOutFloat(std::format("##GithubIconHover{}", identifier).c_str(), 0.f, 1.f, isGithubButtonHovered, 0.3f);
 
         /** Check if the animation has started */
         if (githubIconHoverTransparency != 0.f) {

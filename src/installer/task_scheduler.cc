@@ -30,6 +30,7 @@
 
 #include "task_scheduler.h"
 #include <algorithm>
+#include <iostream>
 
 TaskScheduler::TaskScheduler() : m_hasAnyTaskFailed(false), overallProgress(0.0), currentTaskIndex(0), currentTaskProgress(std::make_unique<double>(0.0))
 {
@@ -78,8 +79,11 @@ void TaskScheduler::run()
     }
 
     for (currentTaskIndex = 0; currentTaskIndex < tasks.size(); currentTaskIndex++) {
+        std::cout << "[scheduler] starting task " << (currentTaskIndex + 1) << " of " << tasks.size() << std::endl;
         currentTaskProgress = std::make_unique<double>(0.0);
         TaskResult result = tasks[currentTaskIndex](currentTaskProgress);
+
+        std::cout << "[scheduler] task " << (currentTaskIndex + 1) << " finished: " << (result.success ? "success" : "failure") << " msg='" << result.message << "'" << std::endl;
 
         if (!result.success) {
             m_hasAnyTaskFailed = true;
@@ -91,6 +95,7 @@ void TaskScheduler::run()
         overallProgress = getProgress();
     }
     overallProgress = 1.0;
+    std::cout << "[scheduler] run() complete, overallProgress=" << overallProgress << std::endl;
 }
 
 size_t TaskScheduler::getTaskCount() const

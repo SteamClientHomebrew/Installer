@@ -45,7 +45,6 @@
 #include <imspinner.h>
 #include <util.h>
 #include <thread>
-#include <fmt/format.h>
 
 using namespace ImGui;
 using namespace ImSpinner;
@@ -101,11 +100,12 @@ ComponentProps MakeComponentProps(std::vector<std::filesystem::path> pathList)
         pathListStr.push_back(path.string());
     }
 
-    return { byteSize, pathListStr };
+    return { static_cast<float>(byteSize), pathListStr };
 }
 
 std::vector<std::pair<std::string, std::tuple<ComponentState, ComponentProps>>> uninstallComponents;
 
+// clang-format off
 void InitializeUninstaller()
 {
     steamPath = GetSteamPath();
@@ -114,15 +114,24 @@ void InitializeUninstaller()
     uninstallFinished = false;
 
     uninstallComponents = {
-        { "Millennium",
-         std::make_tuple(ComponentState({ false, true }),                             MakeComponentProps({ steamPath / "user32.dll", steamPath / "millennium.dll", steamPath / "python311.dll" })) },
-        { "Custom Steam Components",
-         std::make_tuple(ComponentState({ false, true }),                             MakeComponentProps({ steamPath / "ext" / "data" / "assets", steamPath / "ext" / "data" / "shims" }))         },
+        { "Millennium", std::make_tuple(ComponentState({ false, true }), MakeComponentProps({ 
+            steamPath / "user32.dll", 
+            steamPath / "version.dll", 
+            steamPath / "ext" / "compat32" / "millennium_x86.dll", 
+            steamPath / "ext" / "compat32" / "python311.dll", 
+            steamPath / "millennium.dll", 
+            steamPath / "python311.dll" 
+        })) },
+        { "Custom Steam Components", std::make_tuple(ComponentState({ false, true }), MakeComponentProps({ 
+            steamPath / "ext" / "data" / "assets", 
+            steamPath / "ext" / "data" / "shims" 
+        })) },
         { "Dependencies",            std::make_tuple(ComponentState({ false, true }), MakeComponentProps({ steamPath / "ext" / "data" / "cache" }))                                                },
         { "Themes",                  std::make_tuple(ComponentState({ false, true }), MakeComponentProps({ steamPath / "steamui" / "skins" }))                                                     },
         { "Plugins",                 std::make_tuple(ComponentState({ false, true }), MakeComponentProps({ steamPath / "plugins" }))                                                               },
     };
 }
+// clang-format on
 
 void StartUninstall()
 {
@@ -203,7 +212,7 @@ const void RenderComponents()
                     PushStyleVar(ImGuiStyleVar_WindowRounding, 6);
                     PushStyleVar(ImGuiStyleVar_Alpha, 1.f);
                     PushStyleColor(ImGuiCol_PopupBg, ImVec4(0.098f, 0.102f, 0.11f, 1.0f));
-                    SetTooltip(fmt::format("\"{}\" was excluded from the removal process.", component).c_str());
+                    SetTooltip(std::format("\"{}\" was excluded from the removal process.", component).c_str());
                     PopStyleVar(3);
                     PopStyleColor();
                 }

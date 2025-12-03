@@ -30,12 +30,11 @@
 
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <direct.h>
-#include <windows.h>
 #include <minizip/unzip.h>
 #include <iostream>
 #include <filesystem>
 #include <thread>
+#include <vector>
 
 #define WRITE_BUFFER_SIZE 8192
 
@@ -106,7 +105,7 @@ bool IsDirectoryPath(const std::filesystem::path& path)
  */
 void ExtractZippedArchive(const char* zipFilePath, const char* outputDirectory, double* overallProgress, double* fileProgress)
 {
-    std::cout << "Extracting zip file: " << zipFilePath << " to " << outputDirectory << std::endl;
+    std::cout << "[unzip] Extracting zip file: " << zipFilePath << " to " << outputDirectory << std::endl;
 
     unzFile zipfile = unzOpen(zipFilePath);
     if (!zipfile) {
@@ -114,23 +113,21 @@ void ExtractZippedArchive(const char* zipFilePath, const char* outputDirectory, 
         return;
     }
 
-    // First pass: count total files and calculate total size
     int totalFiles = 0;
     uLong totalSize = 0;
 
     if (unzGoToFirstFile(zipfile) == UNZ_OK) {
         do {
             unz_file_info zipedFileMetadata;
-            char zStrFileName[256];
+            std::vector<char> zStrFileName(4096);
 
-            if (unzGetCurrentFileInfo(zipfile, &zipedFileMetadata, zStrFileName, sizeof(zStrFileName), NULL, 0, NULL, 0) == UNZ_OK) {
+            if (unzGetCurrentFileInfo(zipfile, &zipedFileMetadata, zStrFileName.data(), (uInt)zStrFileName.size(), NULL, 0, NULL, 0) == UNZ_OK) {
                 totalFiles++;
                 totalSize += zipedFileMetadata.uncompressed_size;
             }
         } while (unzGoToNextFile(zipfile) == UNZ_OK);
     }
 
-    // Reset to beginning
     unzClose(zipfile);
     zipfile = unzOpen(zipFilePath);
 
@@ -140,47 +137,54 @@ void ExtractZippedArchive(const char* zipFilePath, const char* outputDirectory, 
         return;
     }
 
-    // Variables for progress tracking
     int currentFileIndex = 0;
     uLong processedSize = 0;
 
-    // Initialize progress values
     if (overallProgress)
         *overallProgress = 0.0;
     if (fileProgress)
         *fileProgress = 0.0;
 
     do {
-        char zStrFileName[256];
+        std::vector<char> zStrFileName(4096);
         unz_file_info zipedFileMetadata;
 
-        if (unzGetCurrentFileInfo(zipfile, &zipedFileMetadata, zStrFileName, sizeof(zStrFileName), NULL, 0, NULL, 0) != UNZ_OK) {
+        if (unzGetCurrentFileInfo(zipfile, &zipedFileMetadata, zStrFileName.data(), (uInt)zStrFileName.size(), NULL, 0, NULL, 0) != UNZ_OK) {
             std::cerr << "Error reading file info in zip archive" << std::endl;
-            break;
+            if (unzGoToNextFile(zipfile) != UNZ_OK)
+                break;
+            else
+                continue;
         }
 
+        const std::string debugFileName = std::string(zStrFileName.data());
+        std::cout << "[unzip] processing file #" << (currentFileIndex + 1) << " name='" << debugFileName << "'\n";
+
         currentFileIndex++;
-        const std::string strFileName = std::string(zStrFileName);
+        const std::string strFileName = std::string(zStrFileName.data());
         auto fsOutputDirectory = std::filesystem::path(outputDirectory) / strFileName;
 
-        // Update overall progress (0-1 scale)
+        std::cout << "[unzip] output path: '" << fsOutputDirectory.string() << "'\n";
+
         if (overallProgress && totalSize > 0) {
             *overallProgress = static_cast<double>(processedSize) / totalSize;
         }
 
-        // Create directories if the path is a directory
         if (IsDirectoryPath(fsOutputDirectory)) {
             CreateNonExistentDirectories(fsOutputDirectory);
-            unzCloseCurrentFile(zipfile);
+            std::cout << "[unzip] created directory: '" << fsOutputDirectory.string() << "'\n";
             continue;
         }
 
         if (unzOpenCurrentFile(zipfile) != UNZ_OK) {
-            std::cerr << "\nError opening file " << zStrFileName << " in zip archive" << std::endl;
+            const std::string strFileName = std::string(zStrFileName.data());
+            std::cerr << "\nError opening file " << strFileName << " in zip archive" << std::endl;
             break;
         }
 
-        // Extract the file with progress tracking
+        std::cout << "[unzip] opened file inside zip: '" << strFileName << "'\n";
+
+        CreateNonExistentDirectories(std::filesystem::path(fsOutputDirectory).parent_path());
         FILE* outputFile = fopen(fsOutputDirectory.string().c_str(), "wb");
         if (!outputFile) {
             std::cerr << "\nError: Cannot create output file " << fsOutputDirectory.string() << std::endl;
@@ -188,14 +192,11 @@ void ExtractZippedArchive(const char* zipFilePath, const char* outputDirectory, 
             continue;
         }
 
-        CreateNonExistentDirectories(std::filesystem::path(fsOutputDirectory).parent_path());
-
         const int bufferSize = 8192;
         char buffer[bufferSize];
         int bytesRead = 0;
         uLong currentFileBytesRead = 0;
 
-        // Reset file progress
         if (fileProgress)
             *fileProgress = 0.0;
 
@@ -203,24 +204,33 @@ void ExtractZippedArchive(const char* zipFilePath, const char* outputDirectory, 
             fwrite(buffer, 1, bytesRead, outputFile);
             currentFileBytesRead += bytesRead;
 
-            // Update file progress (0-1 scale)
+            if ((currentFileBytesRead % (WRITE_BUFFER_SIZE * 8)) == 0) {
+                std::cout << "[unzip] reading '" << strFileName << "' bytes read=" << currentFileBytesRead << "\n";
+            }
+
             if (fileProgress && zipedFileMetadata.uncompressed_size > 0) {
                 *fileProgress = static_cast<double>(currentFileBytesRead) / zipedFileMetadata.uncompressed_size;
             }
         }
 
+        if (bytesRead < 0) {
+            std::cerr << "\nError reading contents of " << fsOutputDirectory.string() << " from zip archive" << std::endl;
+            fclose(outputFile);
+            unzCloseCurrentFile(zipfile);
+            continue;
+        }
+
         fclose(outputFile);
         processedSize += zipedFileMetadata.uncompressed_size;
         unzCloseCurrentFile(zipfile);
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(1)); // Small delay for better UX
+        std::cout << "[unzip] finished file '" << strFileName << "' processedSize=" << processedSize << "\n";
     } while (unzGoToNextFile(zipfile) == UNZ_OK);
 
-    // Set final progress values
     if (overallProgress)
         *overallProgress = 1.0;
     if (fileProgress)
         *fileProgress = 1.0;
 
+    std::cout << "[unzip] extraction complete\n";
     unzClose(zipfile);
 }

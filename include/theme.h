@@ -50,6 +50,9 @@ void SetupColorScheme()
     style.ScrollbarSize = ScaleX(15.0f);
 
     // Change text input background color
+    colors[ImGuiCol_Header] = ImVec4(0.098f, 0.102f, 0.11f, 1.0f);          // Background color of headers
+    colors[ImGuiCol_HeaderHovered] = ImVec4(0.122f, 0.125f, 0.133f, 1.0f);  // Background color when hovered
+    colors[ImGuiCol_HeaderActive] = ImVec4(0.4f, 0.4f, 0.4f, 1.0f);         // Background color when active
     colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.0f, 0.0f, 0.0f, 0.5f);     // Background color of modal window dimming
     colors[ImGuiCol_FrameBg] = ImVec4(0.098f, 0.102f, 0.11f, 1.0f);         // Background color of text input
     colors[ImGuiCol_FrameBgHovered] = ImVec4(0.122f, 0.125f, 0.133f, 1.0f); // Background color when hovered

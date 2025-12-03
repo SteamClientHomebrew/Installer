@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.50)
 # Set the project name and version
 project(Installer VERSION 1.0 LANGUAGES CXX)
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "" FORCE)
+add_compile_definitions(UNICODE _UNICODE)
 
 # Specify the C++ standard
 set(CMAKE_CXX_STANDARD 20)
@@ -12,18 +14,6 @@ set(GLFW_BUILD_DOCS OFF)
 set(GLFW_BUILD_TESTS OFF)
 set(GLFW_BUILD_EXAMPLES OFF)
 set(GLFW_BUILD_STATIC ON)
-
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mwindows")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w -fpermissive -fno-diagnostics-show-option")
-
-if (CMAKE_BUILD_TYPE STREQUAL "Release")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Os -fvisibility=hidden -s -flto -fdata-sections -ffunction-sections")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--gc-sections -Wl,--strip-all -flto")
-    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS OFF)
-elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g3 -fvisibility=hidden")
-    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS OFF)
-endif()
 
 add_compile_definitions(
   CURL_STATICLIB
@@ -37,7 +27,6 @@ if (CMAKE_BUILD_TYPE STREQUAL "Release")
         IMGUI_DISABLE_DEMO_WINDOWS
         IMGUI_DISABLE_DEBUG_TOOLS
         IMGUI_DISABLE_STYLE_EDITOR
-        NDEBUG
     )
 endif()
 
@@ -72,19 +61,11 @@ set(SOURCES
 )
 
 # Add the executable
-add_executable(${PROJECT_NAME} WIN32 ${SOURCES})
-
-find_program(WINDRES windres)
-if (WINDRES)
-    add_custom_command(
-        OUTPUT ${CMAKE_BINARY_DIR}/version.o
-        COMMAND ${WINDRES} -i ${CMAKE_SOURCE_DIR}/scripts/version.rc -o ${CMAKE_BINARY_DIR}/version.o
-        DEPENDS ${CMAKE_SOURCE_DIR}/scripts/version.rc
-    )
-
-    add_custom_target(resource DEPENDS ${CMAKE_BINARY_DIR}/version.o)
-    add_dependencies(${PROJECT_NAME} resource)
-    target_link_libraries(${PROJECT_NAME} PRIVATE ${CMAKE_BINARY_DIR}/version.o)
+if(WIN32)
+    set(RESOURCE_FILE "${CMAKE_SOURCE_DIR}/win32/Installer.rc")
+    add_executable(${PROJECT_NAME} WIN32 ${SOURCES} ${RESOURCE_FILE})
+else()
+    add_executable(${PROJECT_NAME} ${SOURCES})
 endif()
 
 # Include directories
@@ -129,7 +110,7 @@ elseif(WIN32)
     find_package(unofficial-minizip CONFIG REQUIRED) # used for extracting zip files
 
     target_include_directories(${PROJECT_NAME} PRIVATE ${Stb_INCLUDE_DIR})
-    
+
     target_link_libraries(${PROJECT_NAME} PRIVATE
         Freetype::Freetype
         glfw
@@ -141,20 +122,6 @@ elseif(WIN32)
         dwmapi
         unofficial::minizip::minizip
         winmm
-    )
-endif()
-
-# Add compilation flags
-if (CMAKE_BUILD_TYPE STREQUAL "Release")
-    target_compile_options(${PROJECT_NAME} PRIVATE
-        -Wall
-        -Wformat
-        -DNDEBUG
-    )
-else()
-    target_compile_options(${PROJECT_NAME} PRIVATE
-        -g
-        -Wall
-        -Wformat
+        bcrypt
     )
 endif()

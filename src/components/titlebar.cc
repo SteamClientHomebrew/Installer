@@ -35,7 +35,6 @@
 #include <animate.h>
 #include <iostream>
 #include <math.h>
-#include <fmt/format.h>
 
 using namespace ImGui;
 
@@ -46,7 +45,7 @@ using namespace ImGui;
 bool RenderTitleBarComponent(std::shared_ptr<RouterNav> router)
 {
     ImGuiIO& io = GetIO();
-    const std::string strTitleText = fmt::format("Steam Homebrew", io.Framerate);
+    const std::string strTitleText = std::format("Steam Homebrew", io.Framerate);
 
     ImGuiViewport* viewport = GetMainViewport();
     PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(ScaleX(15), ScaleY(15)));

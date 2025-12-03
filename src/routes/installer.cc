@@ -41,7 +41,6 @@
 #include <thread>
 #include <util.h>
 #include <nlohmann/json.hpp>
-#include <fmt/core.h>
 #include <http.h>
 #include <task_scheduler.h>
 #include <unzip.h>
@@ -222,10 +221,14 @@ void StartInstaller(std::string steamPath, nlohmann::json& releaseInfo, nlohmann
     easedProgress = 0.0f;
     targetProgress = 0.0f;
 
+    std::cout << "[installer] scheduling download + install tasks" << std::endl;
     scheduler->addTask(std::bind(DownloadReleaseAssets, std::placeholders::_1, releaseInfo, osReleaseInfo));
     scheduler->addTask(std::bind(InstallReleaseAssets, std::placeholders::_1, releaseInfo, osReleaseInfo, steamPath));
+    std::cout << "[installer] running scheduler" << std::endl;
     scheduler->run();
+    std::cout << "[installer] scheduler.run() returned" << std::endl;
 
+    std::cout << "[installer] calling OnFinishInstall()" << std::endl;
     OnFinishInstall();
 }
 
@@ -235,7 +238,7 @@ void RenderFailed(float xPos, const std::string& reason)
     ImGuiViewport* viewport = GetMainViewport();
 
     const char* text = "Failed to install Millennium 😢";
-    const char* subDescription = "View Troubleshooting Guide 🔗";
+    const char* subDescription = "View Troubleshooting Guide ↗";
 
     PushFont(io.Fonts->Fonts[1]);
     SetCursorPos({ xPos + (viewport->Size.x) / 2 - (CalcTextSize(text).x / 2), viewport->Size.y / 2 - ScaleY(55) });
@@ -293,14 +296,14 @@ const void RenderInstaller(std::shared_ptr<RouterNav> router, float xPos)
 
         if (!shouldRenderCompleteModal) {
             // router->setCanGoBack(true);
-            SetCursorPos({ xPos + (viewport->Size.x / 2) - spinnerSize, (viewport->Size.y / 2) - 50 });
+            SetCursorPos({ xPos + (viewport->Size.x / 2) - static_cast<float>(spinnerSize), (viewport->Size.y / 2) - 50 });
             {
-                Spinner<SpinnerTypeT::e_st_ang>("SpinnerAngNoBg", Radius{ spinnerSize }, Thickness{ ScaleX(3) }, Color{ ImColor(255, 255, 255, 255) },
-                                                BgColor{ ImColor(255, 255, 255, 0) }, Speed{ 6 }, Angle{ IM_PI }, Mode{ 0 });
+                Spinner<SpinnerTypeT::e_st_ang>("SpinnerAngNoBg", Radius{ static_cast<float>(spinnerSize) }, Thickness{ ScaleX(3) }, Color{ ImColor(255, 255, 255, 255) },
+                                                BgColor{ ImColor(255, 255, 255, 0) }, Speed{ 6.0f }, Angle{ IM_PI }, Mode{ 0 });
             }
-            SetCursorPos({ xPos + ((viewport->Size.x - progressBarWidth) / 2), viewport->Size.y / 2 + ScaleY(60) });
+            SetCursorPos({ xPos + ((viewport->Size.x - static_cast<float>(progressBarWidth)) / 2), viewport->Size.y / 2 + ScaleY(60) });
             {
-                ProgressBar(easedProgress, { progressBarWidth, ScaleY(4.0f) }, "##ProgressBar");
+                ProgressBar(easedProgress, { static_cast<float>(progressBarWidth), ScaleY(4.0f) }, "##ProgressBar");
             }
 
             SetCursorPos({ xPos + (viewport->Size.x) / 2 - (CalcTextSize(statusText.c_str()).x / 2), viewport->Size.y / 2 + ScaleY(15) });
@@ -308,7 +311,7 @@ const void RenderInstaller(std::shared_ptr<RouterNav> router, float xPos)
         } else {
             const char* text = "You're all set! Thanks for using Millennium 💖";
             const char* description = "If you're new here, see further instructions when Steam® starts.";
-            const char* subDescription = "View Documentation 🔗";
+            const char* subDescription = "View Documentation ↗";
 
             PushFont(io.Fonts->Fonts[1]);
             SetCursorPos({ xPos + (viewport->Size.x) / 2 - (CalcTextSize(text).x / 2), viewport->Size.y / 2 - ScaleY(55) });
@@ -334,7 +337,7 @@ const void RenderInstaller(std::shared_ptr<RouterNav> router, float xPos)
         }
     }
 
-    if (hasTaskSchedulerFinished.load() && easedProgress == 1.0f) {
+    if (hasTaskSchedulerFinished.load()) {
         shouldAnimate = true;
         shouldRenderCompleteModal = true;
         animationStartTime = std::chrono::steady_clock::now();
