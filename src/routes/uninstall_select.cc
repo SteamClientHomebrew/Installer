@@ -97,6 +97,9 @@ ComponentProps MakeComponentProps(std::vector<std::filesystem::path> pathList)
     std::vector<std::string> pathListStr;
 
     for (const auto& path : pathList) {
+        if (!std::filesystem::exists(path)) {
+            continue;
+        }
         pathListStr.push_back(path.string());
     }
 
@@ -119,6 +122,7 @@ void InitializeUninstaller()
             steamPath / "version.dll", 
             steamPath / "ext" / "compat32" / "millennium_x86.dll", 
             steamPath / "ext" / "compat32" / "python311.dll", 
+            steamPath / "millennium.hhx64.dll", 
             steamPath / "millennium.dll", 
             steamPath / "python311.dll" 
         })) },
@@ -126,9 +130,9 @@ void InitializeUninstaller()
             steamPath / "ext" / "data" / "assets", 
             steamPath / "ext" / "data" / "shims" 
         })) },
-        { "Dependencies",            std::make_tuple(ComponentState({ false, true }), MakeComponentProps({ steamPath / "ext" / "data" / "cache" }))                                                },
-        { "Themes",                  std::make_tuple(ComponentState({ false, true }), MakeComponentProps({ steamPath / "steamui" / "skins" }))                                                     },
-        { "Plugins",                 std::make_tuple(ComponentState({ false, true }), MakeComponentProps({ steamPath / "plugins" }))                                                               },
+        { "Dependencies", std::make_tuple(ComponentState({ false, true }), MakeComponentProps({ steamPath / "ext" / "data" / "cache", steamPath / "ext" / "data" / "pyx64" })) },
+        { "Themes",       std::make_tuple(ComponentState({ false, true }), MakeComponentProps({ steamPath / "steamui" / "skins" }))                                            },
+        { "Plugins",      std::make_tuple(ComponentState({ false, true }), MakeComponentProps({ steamPath / "plugins" }))                                                      },
     };
 }
 // clang-format on

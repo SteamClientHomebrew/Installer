@@ -54,7 +54,7 @@ jobs:
           cmake --preset=release
           cmake --build build/release --config Release
           mkdir -p D:/a/build/unsigned
-          mv build/release/Installer.exe D:/a/build/unsigned/MillenniumInstaller-Windows.exe
+          mv build/Installer.exe D:/a/build/unsigned/MillenniumInstaller-Windows.exe
 
       - name: Upload Build Artifact
         id: upload-unsigned-artifact
