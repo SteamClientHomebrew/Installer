@@ -1,3 +1,16 @@
+# [1.4.0](https://github.com/SteamClientHomebrew/Installer/compare/v1.3.0...v1.4.0) (2025-12-08)
+
+
+### Bug Fixes
+
+* Build fixes ([323f75d](https://github.com/SteamClientHomebrew/Installer/commit/323f75d0384f2498c3d00abb48bad4fa1ae3ecfa))
+
+
+### Features
+
+* Add signature verification before installing downloaded Millennium files ([588aa05](https://github.com/SteamClientHomebrew/Installer/commit/588aa053189c986a4a76891722e36ad3c617ed34))
+* move from mingw to msvc for smaller binary ([1bc1535](https://github.com/SteamClientHomebrew/Installer/commit/1bc15356310994102d5fc57d348081b1f948a8c6))
+
 # [1.3.0](https://github.com/SteamClientHomebrew/Installer/compare/v1.2.0...v1.3.0) (2025-10-15)
 
 
