@@ -43,6 +43,7 @@ void RouterNav::navigateNext()
 {
     if (currentIndex + 1 < components.size() && !isAnimating) {
         startAnimation(AnimationDirection::FORWARD);
+        this->setCanGoBack(true);
     }
 }
 
@@ -50,6 +51,7 @@ void RouterNav::navigateBack()
 {
     if (currentIndex > 0 && !isAnimating) {
         startAnimation(AnimationDirection::BACKWARD);
+        this->setCanGoForward(true);
     }
 }
 

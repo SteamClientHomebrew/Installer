@@ -42,14 +42,15 @@ using namespace ImGui;
 constexpr const char* discordInviteLink = "https://steambrew.app/discord";
 constexpr const char* githubRepositoryUrl = "https://github.com/SteamClientHomebrew/Millennium";
 
-const void RenderBottomNavBar(const char* identifier, float xPos, std::function<void()> buttonRenderCallback)
+const void RenderBottomNavBar(const char* identifier, float xPos, std::function<void()> buttonRenderCallback, bool setPosManually)
 {
     ImGuiIO& io = GetIO();
     ImGuiViewport* viewport = GetMainViewport();
     const float BottomNavBarHeight = ScaleY(115);
     const int FooterContainerWidth = ScaleX(300);
 
-    SetCursorPos({ xPos, viewport->Size.y - BottomNavBarHeight + 1 });
+    if (!setPosManually)
+        SetCursorPos({ xPos, viewport->Size.y - BottomNavBarHeight + 1 });
 
     PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(ScaleX(30), ScaleY(30)));
     PushStyleColor(ImGuiCol_Border, ImVec4(0.f, 0.f, 0.f, 0.f));

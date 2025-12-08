@@ -131,14 +131,13 @@ const void RenderOption(OptionProps props, int ContainerWidth, int ContainerHeig
     SetCursorPosY(state.initPos);
 }
 
-const float PollAnimationFrames(float navbarHeight, float windowHeight)
+const float PollAnimationFrames(float navbarHeight, float windowHeight, float startInMs = 0.0f)
 {
     static const float ANIMATION_DURATION = 0.3f;
     static bool shouldAnimate = true;
-
+    static float delayDuration = startInMs / 1000.0f; // Convert ms to seconds
     float startY = windowHeight + navbarHeight;
     float targetY = windowHeight - navbarHeight;
-
     static float currentY = startY;
     static auto animationStartTime = std::chrono::steady_clock::now();
 
@@ -146,16 +145,17 @@ const float PollAnimationFrames(float navbarHeight, float windowHeight)
         auto steadyClockNow = std::chrono::steady_clock::now();
         float elapsedTime = std::chrono::duration<float>(steadyClockNow - animationStartTime).count();
 
-        if (elapsedTime < ANIMATION_DURATION) {
-            currentY = EaseOutBack(elapsedTime, startY, targetY - startY, ANIMATION_DURATION);
+        if (elapsedTime < delayDuration) {
+            currentY = startY;
+        } else if (elapsedTime < delayDuration + ANIMATION_DURATION) {
+            currentY = EaseOutBack(elapsedTime - delayDuration, startY, targetY - startY, ANIMATION_DURATION);
         } else {
-            currentY = windowHeight - navbarHeight;
+            currentY = targetY;
             shouldAnimate = false;
         }
     } else {
-        currentY = windowHeight - navbarHeight;
+        currentY = targetY;
     }
-
     return currentY;
 }
 
@@ -182,7 +182,7 @@ const void RenderHome(std::shared_ptr<RouterNav> router, float xPos)
     PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.078f, 0.082f, 0.09f, 1.0f));
 
     /** Animate the footer bar into view */
-    SetCursorPos({ xPos, PollAnimationFrames(BottomNavBarHeight, viewport->Size.y) });
+    SetCursorPos({ xPos, PollAnimationFrames(BottomNavBarHeight, viewport->Size.y, 125) });
 
     PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(ScaleX(30), ScaleY(30)));
     PushStyleColor(ImGuiCol_Border, ImVec4(0.f, 0.f, 0.f, 0.f));
@@ -310,7 +310,7 @@ const void RenderHome(std::shared_ptr<RouterNav> router, float xPos)
         if (currentOption != UNSET) {
             isButtonHovered = buttonHovered;
         }
-    });
+    }, true);
 
     PopStyleVar(2);
     PopStyleColor(4);

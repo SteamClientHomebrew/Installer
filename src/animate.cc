@@ -71,6 +71,8 @@ float EaseInOutFloat(const std::string& id, float lowerBound, float upperBound, 
     auto it = animations.find(id);
     if (it == animations.end()) {
         animations[id] = AnimationState(lowerBound, upperBound);
+        animations[id].currentValue = currentState ? upperBound : lowerBound;
+        animations[id].wasHovered = currentState;
     }
 
     AnimationState& state = animations[id];

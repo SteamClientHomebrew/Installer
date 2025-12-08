@@ -53,6 +53,7 @@ const CheckBoxState* checkForUpdates;
 const CheckBoxState* automaticallyInstallUpdates;
 
 static ImGui::MarkdownConfig mdConfig;
+std::string latestReleaseTag;
 nlohmann::json releasesList, selectedRelease, osReleaseInfo;
 
 static void UpdateSelectedRelease(const std::string& tag)
@@ -135,6 +136,8 @@ const bool FetchVersionInfo()
     if (selectedRelease.is_null() && !releasesList.empty()) {
         selectedRelease = releasesList.front();
     }
+
+    latestReleaseTag = selectedRelease.contains("tag_name") ? selectedRelease["tag_name"].get<std::string>() : std::string();
 
     bool hasFoundReleaseInfo = false;
     if (!selectedRelease.is_null()) {
@@ -312,10 +315,23 @@ const void RenderInstallPrompt(std::shared_ptr<RouterNav> router, float xPos)
                     std::string tag = release["tag_name"].get<std::string>();
                     bool is_selected = (selectedRelease.contains("tag_name") && selectedRelease["tag_name"].get<std::string>() == tag);
                     PushStyleVar(ImGuiStyleVar_FrameRounding, 6);
-                    if (Selectable(std::format("  {}  ", tag).c_str(), is_selected)) {
+
+                    std::string strTag = tag;
+
+                    if (latestReleaseTag == tag) {
+                        PushStyleColor(ImGuiCol_Text, ImVec4(0.408f, 0.525f, 0.91f, 1.0f));
+                        strTag += " (latest)";
+                    }
+
+                    if (Selectable(std::format("  {}  ", strTag).c_str(), is_selected)) {
                         UpdateSelectedRelease(tag);
                         CloseCurrentPopup();
                     }
+
+                    if (latestReleaseTag == tag) {
+                        PopStyleColor();
+                    }
+
                     PopStyleVar();
                     if (is_selected)
                         SetItemDefaultFocus();
@@ -325,7 +341,7 @@ const void RenderInstallPrompt(std::shared_ptr<RouterNav> router, float xPos)
         }
 
         PopStyleVar(2);
-        PopStyleColor(2);
+        PopStyleColor(3);
         Spacing();
         Spacing();
 
