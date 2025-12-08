@@ -52,9 +52,9 @@ jobs:
       - name: Build Millennium
         run: |
           cmake --preset=release
-          cmake --build build/release --config Release
+          cmake --build build --config Release
           mkdir -p D:/a/build/unsigned
-          mv build/Installer.exe D:/a/build/unsigned/MillenniumInstaller-Windows.exe
+          mv build/Release/Installer.exe D:/a/build/unsigned/MillenniumInstaller-Windows.exe
 
       - name: Upload Build Artifact
         id: upload-unsigned-artifact

@@ -3,15 +3,13 @@
   "configurePresets": [
     {
       "name": "default",
-      "generator": "Ninja",
+      "generator": "Visual Studio 17 2022",
       "binaryDir": "${sourceDir}/build",
       "hidden": true,
       "cacheVariables": {
         "CMAKE_TOOLCHAIN_FILE": "./vendor/vcpkg/scripts/buildsystems/vcpkg.cmake",
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-        "VCPKG_TARGET_TRIPLET": "x64-windows-static",
-        "CMAKE_CXX_COMPILER": "cl.exe",
-        "CMAKE_C_COMPILER": "cl.exe"
+        "VCPKG_TARGET_TRIPLET": "x64-windows-static"
       }
     },
     {
