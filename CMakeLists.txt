@@ -62,14 +62,14 @@ set(SOURCES
 
 # Add the executable
 if(WIN32)
-    set(RESOURCE_FILE "${CMAKE_SOURCE_DIR}/win32/Installer.rc")
+    set(RESOURCE_FILE "${CMAKE_SOURCE_DIR}/resources/win32/Installer.rc")
     add_executable(${PROJECT_NAME} WIN32 ${SOURCES} ${RESOURCE_FILE})
 else()
     add_executable(${PROJECT_NAME} ${SOURCES})
 endif()
 
 # Include directories
-include_directories(include)
+include_directories(src/include)
 include_directories(vendor/imgui/include)
 include_directories(vendor/imgui/extern)
 include_directories(vendor/nlohmann/include)
