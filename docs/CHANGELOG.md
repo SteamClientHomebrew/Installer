@@ -1,3 +1,15 @@
+# [1.5.0](https://github.com/SteamClientHomebrew/Installer/compare/v1.4.0...v1.5.0) (2025-12-11)
+
+
+### Bug Fixes
+
+* fix bottom bar animation when starting installer ([5c439d3](https://github.com/SteamClientHomebrew/Installer/commit/5c439d30fae96c67d2c351ec160ddf0cfaf7ce06))
+
+
+### Features
+
+* Add SignPath signature ([3064366](https://github.com/SteamClientHomebrew/Installer/commit/3064366f854df171b9006e7ebc24ef7661e841ff))
+
 # [1.4.0](https://github.com/SteamClientHomebrew/Installer/compare/v1.3.0...v1.4.0) (2025-12-08)
 
 
