@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/SteamClientHomebrew/Installer/compare/v1.5.0...v1.6.0) (2025-12-12)
+
+
+### Features
+
+* Add auto updater ([65876aa](https://github.com/SteamClientHomebrew/Installer/commit/65876aa51e82f9203fda9a268b0dca69eb9b0ac4))
+
 # [1.5.0](https://github.com/SteamClientHomebrew/Installer/compare/v1.4.0...v1.5.0) (2025-12-11)
 
 
