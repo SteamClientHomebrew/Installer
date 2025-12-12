@@ -3,6 +3,18 @@ cmake_minimum_required(VERSION 3.31.6)
 project(Installer VERSION 1.0 LANGUAGES CXX)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "" FORCE)
 add_compile_definitions(UNICODE _UNICODE)
+# Read the Millennium version from the version file
+file(STRINGS "version" VERSION_LINES LIMIT_COUNT 2)
+list(GET VERSION_LINES 1 MILLENNIUM_VERSION)
+string(STRIP "${MILLENNIUM_VERSION}" MILLENNIUM_VERSION)
+
+# Make cmake re-run if the version file changes
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "version")
+
+# Generate version.h from version.h.in
+configure_file(src/include/version.h.in ${CMAKE_BINARY_DIR}/version.h)
+
+add_compile_definitions(MILLENNIUM_VERSION="${MILLENNIUM_VERSION}")
 
 # Specify the C++ standard
 set(CMAKE_CXX_STANDARD 20)
@@ -37,6 +49,7 @@ set(SOURCES
     src/texture.cc
     src/wndproc.cc
     src/renderer.cc
+    src/updater.cc
     src/routes/home.cc
     src/routes/install_prompt.cc
     src/routes/installer.cc
@@ -48,6 +61,7 @@ set(SOURCES
     src/animate.cc
     src/router.cc
     src/dpi.cc
+    src/semver.cc
     src/installer/task_scheduler.cc
     src/installer/unzip.cc
     vendor/imgui/src/imgui.cpp

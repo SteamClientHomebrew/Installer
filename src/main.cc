@@ -55,6 +55,7 @@
 #include <renderer.h>
 #include <stb_image.h>
 #include <util.h>
+#include "updater.h"
 
 using namespace ImGui;
 
@@ -107,10 +108,12 @@ void SetupImGuiScaling(GLFWwindow* window)
 
     io.Fonts->Clear();
     io.Fonts->AddFontFromMemoryTTF((void*)GeistVariable, sizeof(GeistVariable), 16.0f * scaleFactor, &mem_cfg);
-    if (std::filesystem::exists(fontPath)) io.Fonts->AddFontFromFileTTF(fontPath, 14.0f * scaleFactor, &cfg);
-    
+    if (std::filesystem::exists(fontPath))
+        io.Fonts->AddFontFromFileTTF(fontPath, 14.0f * scaleFactor, &cfg);
+
     io.Fonts->AddFontFromMemoryTTF((void*)Geist_Bold, sizeof(Geist_Bold), 18.0f * scaleFactor, &mem_cfg);
-    if (std::filesystem::exists(fontPath)) io.Fonts->AddFontFromFileTTF(fontPath, 14.0f * scaleFactor, &cfg);
+    if (std::filesystem::exists(fontPath))
+        io.Fonts->AddFontFromFileTTF(fontPath, 14.0f * scaleFactor, &cfg);
 
     /** Explicitly set FreeType as the font loader to ensure color emoji support */
     io.Fonts->SetFontLoader(ImGuiFreeType::GetFontLoader());
@@ -216,12 +219,14 @@ void RenderBlur(HWND hwnd)
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-     if (IsDebuggerPresent()) {
-         AllocConsole();
-         FILE* file;
-         freopen_s(&file, "CONOUT$", "w", stdout);
-         freopen_s(&file, "CONOUT$", "w", stderr);
-     }
+    if (IsDebuggerPresent()) {
+        AllocConsole();
+        FILE* file;
+        freopen_s(&file, "CONOUT$", "w", stdout);
+        freopen_s(&file, "CONOUT$", "w", stderr);
+    }
+
+    CheckForAndDownloadUpdates();
 
     MMRESULT result = timeBeginPeriod(1);
 
