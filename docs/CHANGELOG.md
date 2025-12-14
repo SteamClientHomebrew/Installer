@@ -1,3 +1,10 @@
+# [1.7.0](https://github.com/SteamClientHomebrew/Installer/compare/v1.6.0...v1.7.0) (2025-12-14)
+
+
+### Features
+
+* Show download and install size of Millennium ([8fb386e](https://github.com/SteamClientHomebrew/Installer/commit/8fb386e708e5d595546910f9f2b28fc253677e06))
+
 # [1.6.0](https://github.com/SteamClientHomebrew/Installer/compare/v1.5.0...v1.6.0) (2025-12-12)
 
 
