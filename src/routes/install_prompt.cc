@@ -54,6 +54,7 @@ const CheckBoxState* automaticallyInstallUpdates;
 
 static ImGui::MarkdownConfig mdConfig;
 std::string latestReleaseTag;
+std::string installSizeStr;
 nlohmann::json releasesList, selectedRelease, osReleaseInfo;
 
 static void UpdateSelectedRelease(const std::string& tag)
@@ -68,22 +69,41 @@ static void UpdateSelectedRelease(const std::string& tag)
             continue;
 
         selectedRelease = release;
+        installSizeStr.clear();
 
         for (const auto& asset : selectedRelease["assets"]) {
             std::string assetName = asset["name"];
 #ifdef WIN32
             if (assetName == std::format("millennium-{}-windows-x86_64.zip", tag)) {
                 osReleaseInfo = asset;
-                return;
+            }
+            if (assetName == std::format("millennium-{}-windows-x86_64.installsize", tag)) {
+                if (asset.contains("browser_download_url")) {
+                    auto sizeResponse = Http::Get(asset["browser_download_url"].get<std::string>().c_str(), false);
+                    if (!sizeResponse.empty()) {
+                        installSizeStr = sizeResponse;
+                        // Trim whitespace
+                        installSizeStr.erase(0, installSizeStr.find_first_not_of(" \t\n\r"));
+                        installSizeStr.erase(installSizeStr.find_last_not_of(" \t\n\r") + 1);
+                    }
+                }
             }
 #elif __linux__
             if (assetName == std::format("millennium-{}-linux-x86_64.tar.gz", tag)) {
                 osReleaseInfo = asset;
-                return;
+            }
+            if (assetName == std::format("millennium-{}-linux-x86_64.installsize", tag)) {
+                if (asset.contains("browser_download_url")) {
+                    auto sizeResponse = Http::Get(asset["browser_download_url"].get<std::string>().c_str(), false);
+                    if (!sizeResponse.empty()) {
+                        installSizeStr = sizeResponse;
+                        installSizeStr.erase(0, installSizeStr.find_first_not_of(" \t\n\r"));
+                        installSizeStr.erase(installSizeStr.find_last_not_of(" \t\n\r") + 1);
+                    }
+                }
             }
 #else
             osReleaseInfo = asset;
-            return;
 #endif
         }
 
@@ -140,6 +160,7 @@ const bool FetchVersionInfo()
     latestReleaseTag = selectedRelease.contains("tag_name") ? selectedRelease["tag_name"].get<std::string>() : std::string();
 
     bool hasFoundReleaseInfo = false;
+    installSizeStr.clear();
     if (!selectedRelease.is_null()) {
         std::string releaseTag = selectedRelease.contains("tag_name") ? selectedRelease["tag_name"].get<std::string>() : std::string();
         for (const auto& asset : selectedRelease["assets"]) {
@@ -148,18 +169,35 @@ const bool FetchVersionInfo()
             if (assetName == std::format("millennium-{}-windows-x86_64.zip", releaseTag)) {
                 osReleaseInfo = asset;
                 hasFoundReleaseInfo = true;
-                break;
+            }
+            if (assetName == std::format("millennium-{}-windows-x86_64.installsize", releaseTag)) {
+                if (asset.contains("browser_download_url")) {
+                    auto sizeResponse = Http::Get(asset["browser_download_url"].get<std::string>().c_str(), false);
+                    if (!sizeResponse.empty()) {
+                        installSizeStr = sizeResponse;
+                        installSizeStr.erase(0, installSizeStr.find_first_not_of(" \t\n\r"));
+                        installSizeStr.erase(installSizeStr.find_last_not_of(" \t\n\r") + 1);
+                    }
+                }
             }
 #elif __linux__
             if (assetName == std::format("millennium-{}-linux-x86_64.tar.gz", releaseTag)) {
                 osReleaseInfo = asset;
                 hasFoundReleaseInfo = true;
-                break;
+            }
+            if (assetName == std::format("millennium-{}-linux-x86_64.installsize", releaseTag)) {
+                if (asset.contains("browser_download_url")) {
+                    auto sizeResponse = Http::Get(asset["browser_download_url"].get<std::string>().c_str(), false);
+                    if (!sizeResponse.empty()) {
+                        installSizeStr = sizeResponse;
+                        installSizeStr.erase(0, installSizeStr.find_first_not_of(" \t\n\r"));
+                        installSizeStr.erase(installSizeStr.find_last_not_of(" \t\n\r") + 1);
+                    }
+                }
             }
 #else
             osReleaseInfo = asset;
             hasFoundReleaseInfo = true;
-            break;
 #endif
         }
     }
@@ -274,8 +312,7 @@ const void RenderInstallPrompt(std::shared_ptr<RouterNav> router, float xPos)
         PopStyleColor(2);
         PopStyleVar(3);
 
-        Spacing();
-        Spacing();
+        SetCursorPosY(GetCursorPosY() + ScaleY(100));
         PushStyleColor(ImGuiCol_Text, ImVec4(0.422f, 0.425f, 0.441f, 1.0f));
 
         std::string currentTag = selectedRelease.contains("tag_name") ? selectedRelease["tag_name"].get<std::string>() : std::string("(none)");
@@ -305,7 +342,7 @@ const void RenderInstallPrompt(std::shared_ptr<RouterNav> router, float xPos)
         PushStyleVar(ImGuiStyleVar_PopupRounding, 6);
         PushStyleColor(ImGuiCol_PopupBg, ImVec4(0.1f, 0.1f, 0.11f, 1.0f));
 
-        SetNextWindowSize(ImVec2(ScaleX(200), ScaleY(300)));
+        SetNextWindowSize(ImVec2(ScaleX(200), ScaleY(200)));
 
         if (BeginPopup("##VersionPopup")) {
             if (!releasesList.is_null()) {
@@ -342,16 +379,22 @@ const void RenderInstallPrompt(std::shared_ptr<RouterNav> router, float xPos)
 
         PopStyleVar(2);
         PopStyleColor(3);
+
+        Spacing();
+        Spacing();
+        Separator();
         Spacing();
         Spacing();
 
-        SetCursorPosY(GetCursorPosY() + ScaleY(110));
         PushStyleColor(ImGuiCol_Text, ImVec4(0.422f, 0.425f, 0.441f, 1.0f));
-        PushStyleColor(ImGuiCol_Text, ImVec4(0.761, 0.569, 0.149, 1.0f));
 
-        Text("Attention");
-        PopStyleColor();
-        TextWrapped("Your first Steam launch after installing Millennium will take longer than usual while it sets up - don't close Steam during this process.");
+        if (installSizeStr.empty()) {
+            Text("•   Install size: N/A");
+        } else {
+            Text("•   Install size: %.2f MB", stof(installSizeStr) / (1024.0f * 1024.0f));
+        }
+
+        Text("•   Download size: %.2f MB", osReleaseInfo.contains("size") ? osReleaseInfo["size"].get<float>() / (1024.0f * 1024.0f) : 0.0f);
 
         PopStyleColor();
     }
