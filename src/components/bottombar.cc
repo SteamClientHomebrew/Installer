@@ -31,7 +31,7 @@
 #include <imgui.h>
 #include <imgui_stdlib.h>
 #include <dpi.h>
-#include <texture.h>
+#include <texture.hh>
 #include <animate.h>
 #ifdef _WIN32
 #endif

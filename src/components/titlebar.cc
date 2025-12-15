@@ -29,7 +29,7 @@
  */
 
 #include <imgui.h>
-#include <texture.h>
+#include <texture.hh>
 #include <dpi.h>
 #include <components.h>
 #include <animate.h>

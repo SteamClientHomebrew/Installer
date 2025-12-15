@@ -42,7 +42,7 @@
 #include <memory.h>
 #include <atomic>
 #include <animate.h>
-#include <texture.h>
+#include <texture.hh>
 #include <filesystem>
 #include <router.h>
 #include <iostream>

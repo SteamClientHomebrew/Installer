@@ -34,7 +34,7 @@
 #include <string>
 #include <chrono>
 #include <animate.h>
-#include <texture.h>
+#include <texture.hh>
 #include <imgui_stdlib.h>
 #include <imspinner.h>
 #include <dpi.h>

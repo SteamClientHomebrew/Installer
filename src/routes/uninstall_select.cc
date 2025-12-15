@@ -31,7 +31,7 @@
 #include <imgui.h>
 #include <animate.h>
 #include <chrono>
-#include <texture.h>
+#include <texture.hh>
 #include <imgui_stdlib.h>
 #include <imgui_internal.h>
 #include <memory>
