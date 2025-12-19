@@ -1,3 +1,10 @@
+# [1.8.0](https://github.com/SteamClientHomebrew/Installer/compare/v1.7.0...v1.8.0) (2025-12-19)
+
+
+### Features
+
+* Update assets for new Millennium version, and fix some UX issues ([8366ded](https://github.com/SteamClientHomebrew/Installer/commit/8366dedfb6dbcd947dda94c9e6d41158ae23e1e7))
+
 # [1.7.0](https://github.com/SteamClientHomebrew/Installer/compare/v1.6.0...v1.7.0) (2025-12-14)
 
 
