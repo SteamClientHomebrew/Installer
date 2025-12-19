@@ -282,6 +282,8 @@ const void RenderInstaller(std::shared_ptr<RouterNav> router, float xPos)
     static float currentY = startY;
     static bool shouldAnimate = false;
     static bool shouldRenderCompleteModal = false;
+    static bool isWaitingForProgressComplete = false;
+    static auto progressCompleteTime = std::chrono::steady_clock::now();
 
     static auto animationStartTime = std::chrono::steady_clock::now();
 
@@ -338,12 +340,31 @@ const void RenderInstaller(std::shared_ptr<RouterNav> router, float xPos)
     }
 
     if (hasTaskSchedulerFinished.load()) {
-        shouldAnimate = true;
-        shouldRenderCompleteModal = true;
-        animationStartTime = std::chrono::steady_clock::now();
-
-        /** Reset the flag so it doesn't restart the animation each frame */
+        isWaitingForProgressComplete = true;
+        /** Reset the flag so it doesn't restart each frame */
         hasTaskSchedulerFinished.store(false);
+    }
+
+    /** Wait for progress bar animation to complete, then wait 0.5 seconds before showing the complete modal */
+    if (isWaitingForProgressComplete && !shouldRenderCompleteModal) {
+        if (easedProgress >= 0.99f) {
+            static bool timerStarted = false;
+            if (!timerStarted) {
+                progressCompleteTime = std::chrono::steady_clock::now();
+                timerStarted = true;
+            }
+            
+            auto now = std::chrono::steady_clock::now();
+            float elapsedTime = std::chrono::duration<float>(now - progressCompleteTime).count();
+            
+            if (elapsedTime >= 0.5f) {
+                shouldAnimate = true;
+                shouldRenderCompleteModal = true;
+                animationStartTime = std::chrono::steady_clock::now();
+                isWaitingForProgressComplete = false;
+                timerStarted = false;
+            }
+        }
     }
 
     static const float ANIMATION_DURATION = 0.3f;

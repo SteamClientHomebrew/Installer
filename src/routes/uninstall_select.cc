@@ -122,6 +122,8 @@ void InitializeUninstaller()
             steamPath / "version.dll", 
             steamPath / "ext" / "compat32" / "millennium_x86.dll", 
             steamPath / "ext" / "compat32" / "python311.dll", 
+            steamPath / "ext" / "compat64" / "millennium_x64.dll", 
+            steamPath / "ext" / "compat64" / "python311.dll", 
             steamPath / "millennium.hhx64.dll", 
             steamPath / "millennium.dll", 
             steamPath / "python311.dll" 
@@ -139,6 +141,9 @@ void InitializeUninstaller()
 
 void StartUninstall()
 {
+    /** Kill Steam before uninstalling */
+    KillSteamProcess();
+
     /** Render all selected components as uninstalling */
     std::for_each(uninstallComponents.begin(), uninstallComponents.end(), [](auto& pair)
     {
@@ -151,6 +156,12 @@ void StartUninstall()
         auto& [state, props] = componentPair.second;
         if (state.isSelected) {
             std::this_thread::sleep_for(std::chrono::milliseconds(300));
+
+            /** If the path list is empty, the component is already uninstalled */
+            if (props.pathList.empty()) {
+                state.uninstallState.state = ComponentState::UninstallState::Success;
+                continue;
+            }
 
             for (const auto& path : props.pathList) {
                 std::error_code ec;

@@ -37,6 +37,7 @@
 #include <imgui.h>
 #include <memory>
 #include <dpi.h>
+#include <mutex>
 
 /** Based on https://stackoverflow.com/questions/13462001/ease-in-and-ease-out-animation-formula */
 float EaseInOut(float t)
@@ -46,7 +47,7 @@ float EaseInOut(float t)
 
 float EaseInOutFloat(const std::string& id, float lowerBound, float upperBound, bool currentState, float duration)
 {
-    struct AnimationState
+    struct FloatAnimationState
     {
         bool wasHovered = false;
         bool isAnimating = false;
@@ -59,23 +60,26 @@ float EaseInOutFloat(const std::string& id, float lowerBound, float upperBound, 
 
         float lastXDPI = XDPI, lastYDPI = YDPI;
 
-        AnimationState() = default;
-        AnimationState(float lower, float upper)
+        FloatAnimationState() = default;
+        FloatAnimationState(float lower, float upper)
             : wasHovered(false), isAnimating(false), isReversing(false), elapsedTime(0.0f), currentValue(lower), minValue(lower), maxValue(upper)
         {
         }
     };
 
-    static std::unordered_map<std::string, AnimationState> animations;
+    static std::unordered_map<std::string, FloatAnimationState> animations;
+    static std::mutex animationsMutex;
+
+    std::lock_guard<std::mutex> lock(animationsMutex);
 
     auto it = animations.find(id);
     if (it == animations.end()) {
-        animations[id] = AnimationState(lowerBound, upperBound);
+        animations[id] = FloatAnimationState(lowerBound, upperBound);
         animations[id].currentValue = currentState ? upperBound : lowerBound;
         animations[id].wasHovered = currentState;
     }
 
-    AnimationState& state = animations[id];
+    FloatAnimationState& state = animations[id];
 
     float deltaTime = ImGui::GetIO().DeltaTime;
 
@@ -119,6 +123,9 @@ float EaseInOutFloat(const std::string& id, float lowerBound, float upperBound, 
 float SmoothFloat(const std::string& id, float targetOffset, bool currentState, float displacement, float duration, std::tuple<float, float> colorTransition)
 {
     static std::unordered_map<std::string, AnimationState> animations;
+    static std::mutex animationsMutex;
+
+    std::lock_guard<std::mutex> lock(animationsMutex);
 
     const auto [lowerBound, upperBound] = colorTransition;
     AnimationState& state = animations[id];

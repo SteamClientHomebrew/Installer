@@ -63,7 +63,10 @@ void ShowMessageBox(std::string title, std::string body, MessageLevel level)
  */
 void RenderMessageBoxes()
 {
+    static bool isClosing = false;
+
     if (messageBoxQueue.size() <= 0) {
+        isClosing = false;
         return;
     }
 
@@ -81,15 +84,25 @@ void RenderMessageBoxes()
     static const float scrollFriction = 0.95f;
     static const float minVelocityThreshold = 0.01f;
 
-    float opacityAnimation = EaseInOutFloat("MessageAlertPopupAnimation", 0.f, 1.f, true, 0.3f);
+    float opacityAnimation = EaseInOutFloat("MessageAlertPopupAnimation", 0.f, 1.f, !isClosing, 0.3f);
 
-    PushStyleColor(ImGuiCol_PopupBg, ImVec4(0.098f, 0.102f, 0.11f, 1.0f));
-    PushStyleColor(ImGuiCol_Border, ImVec4(0.48f, 0.484f, 0.492f, 0.5f));
+    // When fade-out animation completes, actually close the popup
+    if (isClosing && opacityAnimation <= 0.01f) {
+        CloseCurrentPopup();
+        messageBoxQueue.pop();
+        isClosing = false;
+        hasSkippedFirstFrame = false;
+        scrollPosition = 0.0f;
+        scrollVelocity = 0.0f;
+    }
+
+    PushStyleColor(ImGuiCol_PopupBg, ImVec4(0.067f, 0.071f, 0.078f, 1.0f));
+    PushStyleColor(ImGuiCol_Border, ImVec4(0.48f, 0.484f, 0.492f, 0.3f));
     PushStyleVar(ImGuiStyleVar_Alpha, opacityAnimation);
     PushStyleVar(ImGuiStyleVar_WindowRounding, ScaleX(10.0f));
     PushStyleVar(ImGuiStyleVar_WindowBorderSize, ScaleX(1.0f));
 
-    SetNextWindowSizeConstraints(ImVec2(ScaleX(500), 0), ImVec2(ScaleX(700), FLT_MAX));
+    SetNextWindowSizeConstraints(ImVec2(ScaleX(650), 0), ImVec2(ScaleX(900), FLT_MAX));
 
     if (BeginPopupModal("MessageAlertPopup", nullptr,
                         ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove |
@@ -120,9 +133,7 @@ void RenderMessageBoxes()
 
         TextWrapped(currentBox.title.c_str());
         PopFont();
-        SetCursorPosY(GetCursorPosY() + ScaleY(15));
-        Separator();
-        SetCursorPosY(GetCursorPosY() + ScaleY(20));
+        SetCursorPosY(GetCursorPosY() + ScaleY(25));
 
         TextWrapped(currentBox.body.c_str());
 
@@ -134,8 +145,7 @@ void RenderMessageBoxes()
 
         SetScrollY(scrollPosition);
         if (hasSkippedFirstFrame && !ImGui::IsWindowHovered() && ImGui::IsMouseClicked(0)) {
-            CloseCurrentPopup();
-            messageBoxQueue.pop();
+            isClosing = true;
         }
         hasSkippedFirstFrame = true;
 
@@ -143,16 +153,20 @@ void RenderMessageBoxes()
 
         PushStyleColor(ImGuiCol_Button, ImVec4(1.f, 1.f, 1.f, 1.f));
         PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.f, 1.f, 1.f, 1.f));
+        PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.9f, 0.9f, 0.9f, 1.f));
         PushStyleColor(ImGuiCol_Text, ImVec4(0.f, 0.f, 0.f, 1.f));
 
         SetCursorPosX(GetCursorPosX() + GetContentRegionAvail().x - ScaleX(140));
 
         if (Button("Continue", ImVec2(ScaleX(140), ScaleY(50)))) {
-            CloseCurrentPopup();
-            messageBoxQueue.pop();
+            isClosing = true;
         }
 
-        PopStyleColor(3);
+        if (IsItemHovered()) {
+            SetMouseCursor(ImGuiMouseCursor_Hand);
+        }
+
+        PopStyleColor(4);
         EndPopup();
     }
 

@@ -69,10 +69,10 @@ void RenderImGui(GLFWwindow* window, std::shared_ptr<RouterNav> router)
         SameLine();
         currentPanel(router, xOffsetCurrent);
 
-        // if (IsKeyPressed(ImGuiKey_MouseX1)) {
-        //     if (router->canGoBack())
-        //         router->navigateBack();
-        // }
+        if (IsKeyPressed(ImGuiKey_MouseX1)) {
+            if (router->canGoBack())
+                router->navigateBack();
+        }
         // if (IsKeyPressed(ImGuiKey_MouseX2)) {
         //     if (router->canGoForward())
         //         router->navigateNext();
