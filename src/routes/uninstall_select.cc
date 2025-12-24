@@ -211,7 +211,7 @@ const void RenderComponents()
         {
             /** Not currently uninstalling, the user is selecting components to be uninstalled */
             if (!isUninstalling) {
-                state.isSelected = RenderCheckBox(state.isSelected, formattedComponent.c_str(), strPathList.c_str(), false, true)->isChecked;
+                state.isSelected = RenderCheckBox(state.isSelected, formattedComponent, strPathList, false, true)->isChecked;
                 continue;
             }
 
@@ -348,34 +348,66 @@ const void RenderUninstallSelect(std::shared_ptr<RouterNav> router, float xPos)
     RenderBottomNavBar("InstallPrompt", xPos, [router, xPos]
     {
         static bool isButtonHovered = false;
-        float currentColor = EaseInOutFloat("##NextButton", 1.0f, 0.8f, isButtonHovered, 0.3f);
-
-        PushStyleColor(ImGuiCol_Button, ImVec4(currentColor, currentColor, currentColor, 1.0f));
-        PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(currentColor, currentColor, currentColor, 1.0f));
-        PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.8f, 0.8f, 0.8f, 1.0f));
 
         if (uninstallFinished) {
+            float currentColor = EaseInOutFloat("##NextButton", 1.0f, 0.8f, isButtonHovered, 0.3f);
+
+            PushStyleColor(ImGuiCol_Button, ImVec4(currentColor, currentColor, currentColor, 1.0f));
+            PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(currentColor, currentColor, currentColor, 1.0f));
+            PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.8f, 0.8f, 0.8f, 1.0f));
+
             if (Button("Exit", ImVec2(xPos + GetContentRegionAvail().x, GetContentRegionAvail().y))) {
                 std::exit(0);
             }
-        } else {
-            if (Button("Uninstall", ImVec2(xPos + GetContentRegionAvail().x, GetContentRegionAvail().y))) {
-                if (isUninstalling) {
-                    return;
-                }
 
+            if (isButtonHovered) {
+                SetMouseCursor(ImGuiMouseCursor_Hand);
+            }
+
+            PopStyleColor(3);
+            isButtonHovered = IsItemHovered() || (IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem) && IsMouseDown(ImGuiMouseButton_Left));
+        } else if (isUninstalling) {
+            PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.6f, 0.6f, 0.6f, 1.0f));
+            PushStyleVar(ImGuiStyleVar_ChildRounding, ScaleX(10.0f));
+
+            const float childWidth = GetContentRegionAvail().x;
+            const float childHeight = GetContentRegionAvail().y;
+
+            BeginChild("##ButtonIsBusy", { xPos + childWidth, childHeight }, true, ImGuiWindowFlags_NoScrollbar);
+            {
+                const float spinnerSize = ScaleX(12.f);
+                SetCursorPos({ childWidth / 2 - spinnerSize, spinnerSize });
+
+                Spinner<SpinnerTypeT::e_st_ang>("SpinnerAngNoBg", Radius{ spinnerSize }, Thickness{ ScaleX(2) }, Color{ ImColor(0, 0, 0, 255) },
+                                                BgColor{ ImColor(255, 255, 255, 0) }, Speed{ 6 }, Angle{ IM_PI }, Mode{ 0 });
+            }
+            EndChild();
+            PopStyleColor();
+            PopStyleVar();
+
+            if (IsItemHovered()) {
+                SetMouseCursor(ImGuiMouseCursor_NotAllowed);
+            }
+        } else {
+            float currentColor = EaseInOutFloat("##NextButton", 1.0f, 0.8f, isButtonHovered, 0.3f);
+
+            PushStyleColor(ImGuiCol_Button, ImVec4(currentColor, currentColor, currentColor, 1.0f));
+            PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(currentColor, currentColor, currentColor, 1.0f));
+            PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.8f, 0.8f, 0.8f, 1.0f));
+
+            if (Button("Uninstall", ImVec2(xPos + GetContentRegionAvail().x, GetContentRegionAvail().y))) {
                 std::cout << "Uninstalling components..." << std::endl;
 
                 isUninstalling = true;
                 std::thread(StartUninstall).detach();
             }
-        }
 
-        if (isButtonHovered) {
-            SetMouseCursor(ImGuiMouseCursor_Hand);
-        }
+            if (isButtonHovered) {
+                SetMouseCursor(ImGuiMouseCursor_Hand);
+            }
 
-        PopStyleColor(3);
-        isButtonHovered = IsItemHovered() || (IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem) && IsMouseDown(ImGuiMouseButton_Left));
+            PopStyleColor(3);
+            isButtonHovered = IsItemHovered() || (IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem) && IsMouseDown(ImGuiMouseButton_Left));
+        }
     });
 }

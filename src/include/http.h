@@ -44,32 +44,75 @@ static size_t WriteByteCallback(char* ptr, size_t size, size_t nmemb, std::strin
 
 namespace Http
 {
+
+struct Response
+{
+    std::string body;
+    long statusCode = 0;
+    CURLcode curlCode = CURLE_OK;
+
+    bool ok() const
+    {
+        return curlCode == CURLE_OK && statusCode >= 200 && statusCode < 300;
+    }
+    bool isRateLimited() const
+    {
+        return statusCode == 403 || statusCode == 429;
+    }
+    bool isNotFound() const
+    {
+        return statusCode == 404;
+    }
+    bool isNetworkError() const
+    {
+        return curlCode != CURLE_OK;
+    }
+};
+
+static Response GetEx(const char* url, int maxRetries = 3, int timeoutSeconds = 30)
+{
+    Response result;
+    CURL* curl = curl_easy_init();
+
+    if (!curl) {
+        result.curlCode = CURLE_FAILED_INIT;
+        return result;
+    }
+
+    curl_easy_setopt(curl, CURLOPT_URL, url);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteByteCallback);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &result.body);
+    curl_easy_setopt(curl, CURLOPT_USERAGENT, "starlight/1.0");
+    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, static_cast<long>(timeoutSeconds));
+    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10L);
+
+    int attempts = 0;
+    while (attempts < maxRetries) {
+        result.body.clear();
+        result.curlCode = curl_easy_perform(curl);
+
+        if (result.curlCode == CURLE_OK) {
+            curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &result.statusCode);
+            break;
+        }
+
+        attempts++;
+        if (attempts < maxRetries) {
+            // Exponential backoff: 100ms, 200ms, 400ms...
+            std::this_thread::sleep_for(std::chrono::milliseconds(100 * (1 << (attempts - 1))));
+        }
+    }
+
+    curl_easy_cleanup(curl);
+    return result;
+}
+
+// Legacy wrapper for backward compatibility
 static std::string Get(const char* url, bool retry = true)
 {
-    CURL* curl;
-    CURLcode res;
-    std::string response;
-
-    curl = curl_easy_init();
-    if (curl) {
-        curl_easy_setopt(curl, CURLOPT_URL, url);
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteByteCallback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
-        curl_easy_setopt(curl, CURLOPT_USERAGENT, "starlight/1.0");
-        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L); // Follow redirects
-
-        while (true) {
-            res = curl_easy_perform(curl);
-
-            if (!retry || res == CURLE_OK) {
-                break;
-            }
-
-            std::this_thread::sleep_for(std::chrono::milliseconds(3));
-        }
-        curl_easy_cleanup(curl);
-    }
-    return response;
+    auto response = GetEx(url, retry ? 3 : 1);
+    return response.ok() ? response.body : std::string();
 }
 
 struct ProgressData

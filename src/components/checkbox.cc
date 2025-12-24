@@ -39,7 +39,7 @@
 
 using namespace ImGui;
 
-const CheckBoxState* RenderCheckBox(bool checked, const char* description, const char* tooltipText, bool disabled, bool endChild)
+const CheckBoxState* RenderCheckBox(bool checked, std::string description, std::string tooltipText, bool disabled, bool endChild)
 {
     static std::unordered_map<std::string, CheckBoxState> checkBoxStates;
     auto& state = checkBoxStates.try_emplace(description, checked).first->second;
@@ -66,7 +66,7 @@ const CheckBoxState* RenderCheckBox(bool checked, const char* description, const
         EndChild();
         SameLine(0, ScaleX(20));
         SetCursorPosY(GetCursorPosY() + ScaleY(3));
-        Text(description);
+        Text(description.c_str());
     } else {
         std::string checkBoxMessage = " " + std::string(description);
 
@@ -74,7 +74,7 @@ const CheckBoxState* RenderCheckBox(bool checked, const char* description, const
         EndDisabled();
     }
 
-    if (tooltipText) {
+    if (!tooltipText.empty()) {
         float autoUpdateColor = EaseInOutFloat(description, 0.f, 1.f, state.isHovered, 0.3f);
 
         if (autoUpdateColor) {
@@ -85,7 +85,7 @@ const CheckBoxState* RenderCheckBox(bool checked, const char* description, const
             PushStyleVar(ImGuiStyleVar_Alpha, autoUpdateColor);
             PushStyleColor(ImGuiCol_PopupBg, ImVec4(0.098f, 0.102f, 0.11f, 1.0f));
 
-            SetTooltip(tooltipText);
+            SetTooltip(tooltipText.c_str());
 
             PopStyleVar(3);
             PopStyleColor();

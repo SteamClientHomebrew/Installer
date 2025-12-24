@@ -46,6 +46,7 @@
 #include <util.h>
 #include <imgui_markdown.h>
 #include <mini/ini.h>
+#include <format>
 
 using namespace ImGui;
 
@@ -113,23 +114,38 @@ static void UpdateSelectedRelease(const std::string& tag)
 
 const bool FetchVersionInfo()
 {
+    constexpr int MAX_PAGES = 50; // Safety limit (5000 releases max)
+
     // fetch all pages of releases from GitHub (per_page=100)
     releasesList = nlohmann::json::array();
-    int page = 1;
-    for (;;) {
-        const auto url = std::format("https://api.github.com/repos/SteamClientHomebrew/Millennium/releases?per_page=100&page={}", page);
-        const auto response = Http::Get(url.c_str(), false);
 
-        if (response.empty()) {
+    for (int page = 1; page <= MAX_PAGES; ++page) {
+        const auto url = std::format("https://api.github.com/repos/SteamClientHomebrew/Millennium/releases?per_page=100&page={}", page);
+        const auto response = Http::GetEx(url.c_str());
+
+        if (response.isNetworkError()) {
             if (page == 1) {
-                ShowMessageBox("Whoops!", "Failed to fetch version information from the GitHub API! Make sure you have a valid internet connection.", Error);
+                ShowMessageBox("Whoops!", "Failed to connect to the GitHub API! Make sure you have a valid internet connection.", Error);
+                return false;
+            }
+            break;
+        }
+
+        if (response.isRateLimited()) {
+            ShowMessageBox("Whoops!", "GitHub API rate limit exceeded. Please wait a few minutes and try again.", Error);
+            return false;
+        }
+
+        if (!response.ok()) {
+            if (page == 1) {
+                ShowMessageBox("Whoops!", std::format("Failed to fetch version information (HTTP {}). Please try again later.", response.statusCode), Error);
                 return false;
             }
             break;
         }
 
         try {
-            auto pageJson = nlohmann::json::parse(response);
+            auto pageJson = nlohmann::json::parse(response.body);
             if (!pageJson.is_array() || pageJson.empty())
                 break;
 
@@ -138,11 +154,9 @@ const bool FetchVersionInfo()
                 releasesList.push_back(r);
         } catch (const nlohmann::json::exception& e) {
             std::cerr << "JSON parse error: " << e.what() << std::endl;
-            ShowMessageBox("Whoops!", "Failed to parse version information from the GitHub API! Please wait a moment and try again, you're likely rate limited.", Error);
+            ShowMessageBox("Whoops!", "Failed to parse version information from the GitHub API!", Error);
             return false;
         }
-
-        page += 1;
     }
 
     // choose default selectedRelease: prefer latest non-prerelease, fall back to first release
@@ -202,7 +216,12 @@ const bool FetchVersionInfo()
         }
     }
 
-    return hasFoundReleaseInfo;
+    if (!hasFoundReleaseInfo) {
+        ShowMessageBox("Whoops!", "We failed to find the latest Millennium release!", Error);
+        return false;
+    }
+
+    return true;
 }
 
 const void RenderInstallPrompt(std::shared_ptr<RouterNav> router, float xPos)

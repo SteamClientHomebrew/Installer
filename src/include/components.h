@@ -67,4 +67,4 @@ struct CheckBoxState
     }
 };
 
-const CheckBoxState* RenderCheckBox(bool checked, const char* description, const char* tooltipText = nullptr, bool disabled = false, bool endChild = false);
+const CheckBoxState* RenderCheckBox(bool checked, std::string description, std::string tooltipText = nullptr, bool disabled = false, bool endChild = false);
