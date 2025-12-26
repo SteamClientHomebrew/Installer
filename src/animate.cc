@@ -45,41 +45,44 @@ float EaseInOut(float t)
     return t < 0.5f ? 2 * t * t : -1 + (4 - 2 * t) * t;
 }
 
+namespace
+{
+struct FloatAnimationState
+{
+    bool wasHovered = false;
+    bool isAnimating = false;
+    bool isReversing = false;
+
+    float elapsedTime = 0.0f;
+    float currentValue = 0.0f;
+    float minValue = 0.0f;
+    float maxValue = 1.0f;
+
+    float lastXDPI = XDPI, lastYDPI = YDPI;
+
+    FloatAnimationState() = default;
+    FloatAnimationState(float lower, float upper)
+        : wasHovered(false), isAnimating(false), isReversing(false), elapsedTime(0.0f), currentValue(lower), minValue(lower), maxValue(upper)
+    {
+    }
+};
+
+std::unordered_map<std::string, FloatAnimationState> g_floatAnimations;
+std::mutex g_floatAnimationsMutex;
+} // namespace
+
 float EaseInOutFloat(const std::string& id, float lowerBound, float upperBound, bool currentState, float duration)
 {
-    struct FloatAnimationState
-    {
-        bool wasHovered = false;
-        bool isAnimating = false;
-        bool isReversing = false;
+    std::lock_guard<std::mutex> lock(g_floatAnimationsMutex);
 
-        float elapsedTime = 0.0f;
-        float currentValue = 0.0f;
-        float minValue = 0.0f;
-        float maxValue = 1.0f;
-
-        float lastXDPI = XDPI, lastYDPI = YDPI;
-
-        FloatAnimationState() = default;
-        FloatAnimationState(float lower, float upper)
-            : wasHovered(false), isAnimating(false), isReversing(false), elapsedTime(0.0f), currentValue(lower), minValue(lower), maxValue(upper)
-        {
-        }
-    };
-
-    static std::unordered_map<std::string, FloatAnimationState> animations;
-    static std::mutex animationsMutex;
-
-    std::lock_guard<std::mutex> lock(animationsMutex);
-
-    auto it = animations.find(id);
-    if (it == animations.end()) {
-        animations[id] = FloatAnimationState(lowerBound, upperBound);
-        animations[id].currentValue = currentState ? upperBound : lowerBound;
-        animations[id].wasHovered = currentState;
+    auto it = g_floatAnimations.find(id);
+    if (it == g_floatAnimations.end()) {
+        g_floatAnimations[id] = FloatAnimationState(lowerBound, upperBound);
+        g_floatAnimations[id].currentValue = currentState ? upperBound : lowerBound;
+        g_floatAnimations[id].wasHovered = currentState;
     }
 
-    FloatAnimationState& state = animations[id];
+    FloatAnimationState& state = g_floatAnimations[id];
 
     float deltaTime = ImGui::GetIO().DeltaTime;
 
