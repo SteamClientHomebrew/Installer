@@ -283,10 +283,11 @@ static void StartSteamFromPath(std::string steamPath)
     si.cb = sizeof(si);
 
     std::wstring wSteamExePath(steamExePath.begin(), steamExePath.end());
+    std::wstring wSteamPath(steamPath.begin(), steamPath.end());
     std::vector<wchar_t> cmd(wSteamExePath.begin(), wSteamExePath.end());
     cmd.push_back(L'\0');
 
-    if (!CreateProcessW(NULL, cmd.data(), NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
+    if (!CreateProcessW(NULL, cmd.data(), NULL, NULL, FALSE, 0, NULL, wSteamPath.c_str(), &si, &pi)) {
         ShowMessageBox("Whoops!", std::format("Failed to start Steam. Please check your installation path. Error code: {}", GetLastError()), Error);
         return;
     }

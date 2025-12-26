@@ -353,10 +353,10 @@ const void RenderInstaller(std::shared_ptr<RouterNav> router, float xPos)
                 progressCompleteTime = std::chrono::steady_clock::now();
                 timerStarted = true;
             }
-            
+
             auto now = std::chrono::steady_clock::now();
             float elapsedTime = std::chrono::duration<float>(now - progressCompleteTime).count();
-            
+
             if (elapsedTime >= 0.5f) {
                 shouldAnimate = true;
                 shouldRenderCompleteModal = true;
