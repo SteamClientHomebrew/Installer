@@ -1,3 +1,12 @@
+## [1.8.1](https://github.com/SteamClientHomebrew/Installer/compare/v1.8.0...v1.8.1) (2025-12-26)
+
+
+### Bug Fixes
+
+* Fix various UX issues and improve error reporting ([9bb9346](https://github.com/SteamClientHomebrew/Installer/commit/9bb934602a0fb80ff3b2731f99814dc35dd79938))
+* Make installer properly start Steam from the Steam path instead of cwd ([ed039d2](https://github.com/SteamClientHomebrew/Installer/commit/ed039d2356c91c4fb821ecf605717223bdbfe962))
+* Mutex fixes when animating ([a5932a9](https://github.com/SteamClientHomebrew/Installer/commit/a5932a9c64bddeb31ef8acfd5f29fd5485385ffa))
+
 # [1.8.0](https://github.com/SteamClientHomebrew/Installer/compare/v1.7.0...v1.8.0) (2025-12-19)
 
 
