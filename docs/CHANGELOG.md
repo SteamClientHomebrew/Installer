@@ -1,3 +1,10 @@
+# [1.9.0](https://github.com/SteamClientHomebrew/Installer/compare/v1.8.1...v1.9.0) (2025-12-31)
+
+
+### Features
+
+* **Uninstaller:** Add new file "wsock32.dll" to list of files to uninstall ([9e198f2](https://github.com/SteamClientHomebrew/Installer/commit/9e198f2182105dae499685ee07b4b89645fda777))
+
 ## [1.8.1](https://github.com/SteamClientHomebrew/Installer/compare/v1.8.0...v1.8.1) (2025-12-26)
 
 
