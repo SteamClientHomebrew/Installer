@@ -120,6 +120,7 @@ void InitializeUninstaller()
         { "Millennium", std::make_tuple(ComponentState({ false, true }), MakeComponentProps({ 
             steamPath / "user32.dll", 
             steamPath / "version.dll", 
+            steamPath / "wsock32.dll", 
             steamPath / "ext" / "compat32" / "millennium_x86.dll", 
             steamPath / "ext" / "compat32" / "python311.dll", 
             steamPath / "ext" / "compat64" / "millennium_x64.dll", 
