@@ -98,7 +98,7 @@ void CheckForAndDownloadUpdates()
 
     // Compare versions (normalize to strip 'v' prefix)
     try {
-        if (Semver::Compare(NormalizeVersion(currentVersion), NormalizeVersion(latestVersion)) >= 0) {
+        if (semver::cmp(NormalizeVersion(currentVersion), NormalizeVersion(latestVersion)) >= 0) {
             std::cout << "Installer is up to date (current: " << currentVersion << ", latest: " << latestVersion << ")." << std::endl;
             return;
         }

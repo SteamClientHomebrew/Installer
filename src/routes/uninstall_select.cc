@@ -108,30 +108,56 @@ ComponentProps MakeComponentProps(std::vector<std::filesystem::path> pathList)
 
 std::vector<std::pair<std::string, std::tuple<ComponentState, ComponentProps>>> uninstallComponents;
 
+static std::filesystem::path GetMillenniumLocalPath()
+{
+    const char* localAppData = std::getenv("LOCALAPPDATA");
+    if (localAppData) {
+        return std::filesystem::path(localAppData) / "Millennium";
+    }
+    return {};
+}
+
 // clang-format off
 void InitializeUninstaller()
 {
     steamPath = GetSteamPath();
+    auto millenniumLocalPath = GetMillenniumLocalPath();
 
     isUninstalling = false;
     uninstallFinished = false;
 
+    bool isNewLayout = !millenniumLocalPath.empty() && std::filesystem::exists(millenniumLocalPath);
+
+    std::vector<std::filesystem::path> millenniumPaths;
+
+    if (isNewLayout) {
+        // New install (>2.35.0): files in %LOCALAPPDATA%/Millennium + hardlink in Steam
+        millenniumPaths = {
+            millenniumLocalPath / "lib",
+            millenniumLocalPath / "bin",
+            steamPath / "wsock32.dll",
+        };
+    } else {
+        // Legacy install (<=2.35.0): files in Steam directory
+        millenniumPaths = {
+            steamPath / "user32.dll",
+            steamPath / "version.dll",
+            steamPath / "wsock32.dll",
+            steamPath / "ext" / "compat32" / "millennium_x86.dll",
+            steamPath / "ext" / "compat32" / "python311.dll",
+            steamPath / "ext" / "compat64" / "millennium_x64.dll",
+            steamPath / "ext" / "compat64" / "python311.dll",
+            steamPath / "millennium.hhx64.dll",
+            steamPath / "millennium.dll",
+            steamPath / "python311.dll",
+        };
+    }
+
     uninstallComponents = {
-        { "Millennium", std::make_tuple(ComponentState({ false, true }), MakeComponentProps({ 
-            steamPath / "user32.dll", 
-            steamPath / "version.dll", 
-            steamPath / "wsock32.dll", 
-            steamPath / "ext" / "compat32" / "millennium_x86.dll", 
-            steamPath / "ext" / "compat32" / "python311.dll", 
-            steamPath / "ext" / "compat64" / "millennium_x64.dll", 
-            steamPath / "ext" / "compat64" / "python311.dll", 
-            steamPath / "millennium.hhx64.dll", 
-            steamPath / "millennium.dll", 
-            steamPath / "python311.dll" 
-        })) },
-        { "Custom Steam Components", std::make_tuple(ComponentState({ false, true }), MakeComponentProps({ 
-            steamPath / "ext" / "data" / "assets", 
-            steamPath / "ext" / "data" / "shims" 
+        { "Millennium", std::make_tuple(ComponentState({ false, true }), MakeComponentProps(millenniumPaths)) },
+        { "Custom Steam Components", std::make_tuple(ComponentState({ false, true }), MakeComponentProps({
+            steamPath / "ext" / "data" / "assets",
+            steamPath / "ext" / "data" / "shims"
         })) },
         { "Dependencies", std::make_tuple(ComponentState({ false, true }), MakeComponentProps({ steamPath / "ext" / "data" / "cache", steamPath / "ext" / "data" / "pyx64" })) },
         { "Themes",       std::make_tuple(ComponentState({ false, true }), MakeComponentProps({ steamPath / "steamui" / "skins" }))                                            },
