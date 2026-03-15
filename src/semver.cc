@@ -28,7 +28,7 @@
  * SOFTWARE.
  */
 
-#include "millennium/semver.h"
+#include "semver.h"
 #include <algorithm>
 #include <stdexcept>
 #include <cctype>
