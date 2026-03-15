@@ -1,3 +1,10 @@
+# [1.10.0](https://github.com/SteamClientHomebrew/Installer/compare/v1.9.0...v1.10.0) (2026-03-15)
+
+
+### Features
+
+* Support for Millennium > 2.35.0 ([26c5562](https://github.com/SteamClientHomebrew/Installer/commit/26c5562ec391bc5a0c587b3603062974b306542d))
+
 # [1.9.0](https://github.com/SteamClientHomebrew/Installer/compare/v1.8.1...v1.9.0) (2025-12-31)
 
 
