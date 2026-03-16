@@ -108,33 +108,23 @@ ComponentProps MakeComponentProps(std::vector<std::filesystem::path> pathList)
 
 std::vector<std::pair<std::string, std::tuple<ComponentState, ComponentProps>>> uninstallComponents;
 
-static std::filesystem::path GetMillenniumLocalPath()
-{
-    const char* localAppData = std::getenv("LOCALAPPDATA");
-    if (localAppData) {
-        return std::filesystem::path(localAppData) / "Millennium";
-    }
-    return {};
-}
-
 // clang-format off
 void InitializeUninstaller()
 {
     steamPath = GetSteamPath();
-    auto millenniumLocalPath = GetMillenniumLocalPath();
+    auto millenniumPath = steamPath / "millennium";
 
     isUninstalling = false;
     uninstallFinished = false;
 
-    bool isNewLayout = !millenniumLocalPath.empty() && std::filesystem::exists(millenniumLocalPath);
+    bool isNewLayout = std::filesystem::exists(millenniumPath);
 
     std::vector<std::filesystem::path> millenniumPaths;
 
     if (isNewLayout) {
-        // New install (>2.35.0): files in %LOCALAPPDATA%/Millennium + hardlink in Steam
         millenniumPaths = {
-            millenniumLocalPath / "lib",
-            millenniumLocalPath / "bin",
+            millenniumPath / "lib",
+            millenniumPath / "bin",
             steamPath / "wsock32.dll",
         };
     } else {
@@ -156,12 +146,17 @@ void InitializeUninstaller()
     uninstallComponents = {
         { "Millennium", std::make_tuple(ComponentState({ false, true }), MakeComponentProps(millenniumPaths)) },
         { "Custom Steam Components", std::make_tuple(ComponentState({ false, true }), MakeComponentProps({
+            millenniumPath / "ext" / "data" / "assets",
+            millenniumPath / "ext" / "data" / "shims",
             steamPath / "ext" / "data" / "assets",
             steamPath / "ext" / "data" / "shims"
         })) },
-        { "Dependencies", std::make_tuple(ComponentState({ false, true }), MakeComponentProps({ steamPath / "ext" / "data" / "cache", steamPath / "ext" / "data" / "pyx64" })) },
-        { "Themes",       std::make_tuple(ComponentState({ false, true }), MakeComponentProps({ steamPath / "steamui" / "skins" }))                                            },
-        { "Plugins",      std::make_tuple(ComponentState({ false, true }), MakeComponentProps({ steamPath / "plugins" }))                                                      },
+        { "Dependencies", std::make_tuple(ComponentState({ false, true }), MakeComponentProps({
+            steamPath / "ext" / "data" / "cache",
+            steamPath / "ext" / "data" / "pyx64"
+        })) },
+        { "Themes",  std::make_tuple(ComponentState({ false, true }), MakeComponentProps({ millenniumPath / "themes", steamPath / "steamui" / "skins" })) },
+        { "Plugins", std::make_tuple(ComponentState({ false, true }), MakeComponentProps({ millenniumPath / "plugins", steamPath / "plugins" }))          },
     };
 }
 // clang-format on

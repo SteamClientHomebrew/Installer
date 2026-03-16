@@ -204,12 +204,6 @@ static bool UsesNewInstallLayout(const std::string& tagName)
     }
 }
 
-static std::string GetLocalAppDataPath()
-{
-    const char* localAppData = std::getenv("LOCALAPPDATA");
-    return localAppData ? std::string(localAppData) : std::string();
-}
-
 TaskScheduler::TaskResult InstallReleaseAssets(std::unique_ptr<double>& progress, const nlohmann::json& releaseInfo, const nlohmann::json& osReleaseInfo,
                                                const std::string& steamPath)
 {
@@ -222,30 +216,7 @@ TaskScheduler::TaskResult InstallReleaseAssets(std::unique_ptr<double>& progress
     std::string tagName = releaseInfo.contains("tag_name") ? releaseInfo["tag_name"].get<std::string>() : "";
 
     if (UsesNewInstallLayout(tagName)) {
-        std::string localAppData = GetLocalAppDataPath();
-        if (localAppData.empty()) {
-            return { false, "Failed to resolve %LOCALAPPDATA% path." };
-        }
-
-        auto millenniumPath = std::filesystem::path(localAppData) / "Millennium";
-        std::filesystem::create_directories(millenniumPath);
-
-        ExtractZippedArchive(fileName.string().c_str(), millenniumPath.string().c_str(), progress.get(), &currentFileProgress);
-
-        auto source = millenniumPath / "lib" / "millennium.bootstrap64.dll";
-        auto dest = std::filesystem::path(steamPath) / "wsock32.dll";
-
-        if (!std::filesystem::exists(source)) {
-            return { false, "millennium.bootstrap64.dll not found after extraction." };
-        }
-
-        std::error_code ec;
-        std::filesystem::remove(dest, ec);
-
-        std::filesystem::create_hard_link(source, dest, ec);
-        if (ec) {
-            return { false, std::format("Failed to create hardlink: {}", ec.message()) };
-        }
+        ExtractZippedArchive(fileName.string().c_str(), steamPath.c_str(), progress.get(), &currentFileProgress);
     } else {
         ExtractZippedArchive(fileName.string().c_str(), steamPath.c_str(), progress.get(), &currentFileProgress);
     }
