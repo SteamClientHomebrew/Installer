@@ -8,22 +8,22 @@
     [
       "@semantic-release/changelog",
       {
-        "changelogFile": "docs/CHANGELOG.md"
+        "changelogFile": "../../docs/CHANGELOG.md"
       }
     ],
     [
       "@semantic-release/git",
       {
         "assets": [
-          "docs/CHANGELOG.md",
-          "version"
+          "../../docs/CHANGELOG.md",
+          "./version"
         ]
       }
     ],
     {
       "path": "@semantic-release/github",
       "assets": [
-        "signed-millennium/MillenniumInstaller-Windows.exe"
+        "../../signed-millennium/MillenniumInstaller-Windows.exe"
       ]
     }
   ]
