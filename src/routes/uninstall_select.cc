@@ -249,14 +249,14 @@ const void RenderComponents()
                     PushStyleVar(ImGuiStyleVar_WindowRounding, 6);
                     PushStyleVar(ImGuiStyleVar_Alpha, 1.f);
                     PushStyleColor(ImGuiCol_PopupBg, ImVec4(0.098f, 0.102f, 0.11f, 1.0f));
-                    SetTooltip(std::format("\"{}\" was excluded from the removal process.", component).c_str());
+                    SetTooltip("%s", std::format("\"{}\" was excluded from the removal process.", component).c_str());
                     PopStyleVar(3);
                     PopStyleColor();
                 }
 
                 SameLine(0, ScaleX(20));
                 SetCursorPosY(GetCursorPosY() + ScaleY(3));
-                Text(formattedComponent.c_str());
+                Text("%s", formattedComponent.c_str());
 
                 continue;
             }
@@ -272,7 +272,7 @@ const void RenderComponents()
                     EndChild();
                     SameLine(0, ScaleX(20));
                     SetCursorPosY(GetCursorPosY() + ScaleY(3));
-                    Text(formattedComponent.c_str());
+                    Text("%s", formattedComponent.c_str());
                     break;
                 }
                 case ComponentState::UninstallState::Success:
@@ -284,7 +284,7 @@ const void RenderComponents()
                     SameLine(0, ScaleX(20));
                     SetCursorPosY(GetCursorPosY() + ScaleY(3));
 
-                    Text((component + ": 0.00 B").c_str());
+                    Text("%s", (component + ": 0.00 B").c_str());
                     break;
                 }
                 case ComponentState::UninstallState::Failed:
@@ -306,7 +306,7 @@ const void RenderComponents()
 
                     SameLine(0, ScaleX(20));
                     SetCursorPosY(GetCursorPosY() + ScaleY(3));
-                    Text(formattedComponent.c_str());
+                    Text("%s", formattedComponent.c_str());
 
                     break;
                 }

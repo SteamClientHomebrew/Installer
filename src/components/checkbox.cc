@@ -66,7 +66,7 @@ const CheckBoxState* RenderCheckBox(bool checked, std::string description, std::
         EndChild();
         SameLine(0, ScaleX(20));
         SetCursorPosY(GetCursorPosY() + ScaleY(3));
-        Text(description.c_str());
+        Text("%s", description.c_str());
     } else {
         std::string checkBoxMessage = " " + std::string(description);
 
@@ -85,7 +85,7 @@ const CheckBoxState* RenderCheckBox(bool checked, std::string description, std::
             PushStyleVar(ImGuiStyleVar_Alpha, autoUpdateColor);
             PushStyleColor(ImGuiCol_PopupBg, ImVec4(0.098f, 0.102f, 0.11f, 1.0f));
 
-            SetTooltip(tooltipText.c_str());
+            SetTooltip("%s", tooltipText.c_str());
 
             PopStyleVar(3);
             PopStyleColor();

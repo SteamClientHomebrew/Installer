@@ -298,7 +298,7 @@ const void RenderHome(std::shared_ptr<RouterNav> router, float xPos)
             PushStyleVar(ImGuiStyleVar_Alpha, toolTipOpacity);
 
             BeginTooltip();
-            Text(toolTipText);
+            Text("%s", toolTipText);
             EndTooltip();
 
             PopStyleVar(3);

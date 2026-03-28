@@ -131,11 +131,11 @@ void RenderMessageBoxes()
         }
         SameLine(0, ScaleX(-10));
 
-        TextWrapped(currentBox.title.c_str());
+        TextWrapped("%s", currentBox.title.c_str());
         PopFont();
         SetCursorPosY(GetCursorPosY() + ScaleY(25));
 
-        TextWrapped(currentBox.body.c_str());
+        TextWrapped("%s", currentBox.body.c_str());
 
         scrollPosition = ImClamp(scrollPosition, 0.0f, GetScrollMaxY());
 

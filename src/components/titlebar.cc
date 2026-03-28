@@ -85,7 +85,7 @@ bool RenderTitleBarComponent(std::shared_ptr<RouterNav> router)
 
         SameLine(0, titlePadding);
         SetCursorPosY(GetCursorPosY() + ScaleY(10));
-        Text(strTitleText.c_str());
+        Text("%s", strTitleText.c_str());
         SameLine();
 
         static bool isCloseButtonHovered = false;

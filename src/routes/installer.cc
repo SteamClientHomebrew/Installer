@@ -264,17 +264,17 @@ void RenderFailed(float xPos, const std::string& reason)
 
     PushFont(io.Fonts->Fonts[1]);
     SetCursorPos({ xPos + (viewport->Size.x) / 2 - (CalcTextSize(text).x / 2), viewport->Size.y / 2 - ScaleY(55) });
-    Text(text);
+    Text("%s", text);
     PopFont();
 
     PushStyleColor(ImGuiCol_Text, ImVec4(0.4f, 0.4f, 0.4f, 1.0f));
     SetCursorPos({ xPos + (viewport->Size.x) / 2 - (CalcTextSize(reason.c_str()).x / 2), viewport->Size.y / 2 - ScaleY(15) });
-    Text(reason.c_str());
+    Text("%s", reason.c_str());
     PopStyleColor();
 
     PushStyleColor(ImGuiCol_Text, ImVec4(0.408f, 0.525f, 0.91f, 1.0f));
     SetCursorPos({ xPos + (viewport->Size.x) / 2 - (CalcTextSize(subDescription).x / 2), viewport->Size.y / 2 + ScaleY(20) });
-    Text(subDescription);
+    Text("%s", subDescription);
     PopStyleColor();
 
     if (IsItemHovered()) {
@@ -331,7 +331,7 @@ const void RenderInstaller(std::shared_ptr<RouterNav> router, float xPos)
             }
 
             SetCursorPos({ xPos + (viewport->Size.x) / 2 - (CalcTextSize(statusText.c_str()).x / 2), viewport->Size.y / 2 + ScaleY(15) });
-            Text(statusText.c_str());
+            Text("%s", statusText.c_str());
         } else {
             const char* text = "You're all set! Thanks for using Millennium 💖";
             const char* description = "If you're new here, see further instructions when Steam® starts.";
@@ -339,17 +339,17 @@ const void RenderInstaller(std::shared_ptr<RouterNav> router, float xPos)
 
             PushFont(io.Fonts->Fonts[1]);
             SetCursorPos({ xPos + (viewport->Size.x) / 2 - (CalcTextSize(text).x / 2), viewport->Size.y / 2 - ScaleY(55) });
-            Text(text);
+            Text("%s", text);
             PopFont();
 
             PushStyleColor(ImGuiCol_Text, ImVec4(0.4f, 0.4f, 0.4f, 1.0f));
             SetCursorPos({ xPos + (viewport->Size.x) / 2 - (CalcTextSize(description).x / 2), viewport->Size.y / 2 - ScaleY(15) });
-            Text(description);
+            Text("%s", description);
             PopStyleColor();
 
             PushStyleColor(ImGuiCol_Text, ImVec4(0.408f, 0.525f, 0.91f, 1.0f));
             SetCursorPos({ xPos + (viewport->Size.x) / 2 - (CalcTextSize(subDescription).x / 2), viewport->Size.y / 2 + ScaleY(20) });
-            Text(subDescription);
+            Text("%s", subDescription);
             PopStyleColor();
 
             if (IsItemHovered()) {
