@@ -31,6 +31,7 @@
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <wndproc.h>
 #include <GLFW/glfw3native.h>
+#include <dwmapi.h>
 #include <iostream>
 #include <renderer.h>
 #include <dpi.h>
@@ -92,6 +93,11 @@ void SetBorderlessWindowStyle(GLFWwindow* window, std::shared_ptr<RouterNav> rou
     ::g_routerPtr = router;
 
     HWND hWnd = glfwGetWin32Window(window);
+
+    // Extend frame into client area so DWM stops drawing the native caption bar.
+    // This is required on Windows 10 where WM_NCCALCSIZE alone isn't enough.
+    MARGINS margins = { 0, 0, 0, 1 };
+    DwmExtendFrameIntoClientArea(hWnd, &margins);
 
     RECT windowRect;
     GetWindowRect(hWnd, &windowRect);
