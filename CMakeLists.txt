@@ -4,12 +4,12 @@ project(Installer VERSION 1.0 LANGUAGES CXX)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "" FORCE)
 add_compile_definitions(UNICODE _UNICODE)
 # Read the Millennium version from the version file
-file(STRINGS "version" VERSION_LINES LIMIT_COUNT 2)
+file(STRINGS "resources/versioning/version" VERSION_LINES LIMIT_COUNT 2)
 list(GET VERSION_LINES 1 MILLENNIUM_VERSION)
 string(STRIP "${MILLENNIUM_VERSION}" MILLENNIUM_VERSION)
 
 # Make cmake re-run if the version file changes
-set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "version")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "resources/versioning/version")
 
 # Generate version.h from version.h.in
 configure_file(src/include/version.h.in ${CMAKE_BINARY_DIR}/version.h)
@@ -19,13 +19,6 @@ add_compile_definitions(MILLENNIUM_VERSION="${MILLENNIUM_VERSION}")
 # Specify the C++ standard
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-
-set(BUILD_SHARED_LIBS OFF)
-
-set(GLFW_BUILD_DOCS OFF)
-set(GLFW_BUILD_TESTS OFF)
-set(GLFW_BUILD_EXAMPLES OFF)
-set(GLFW_BUILD_STATIC ON)
 
 add_compile_definitions(
   CURL_STATICLIB
@@ -42,8 +35,22 @@ if (CMAKE_BUILD_TYPE STREQUAL "Release")
     )
 endif()
 
+# Fetch all dependencies via FetchContent
+include(${CMAKE_CURRENT_SOURCE_DIR}/resources/cmake/bootstrap_deps.cmake)
+
+# ImGui source files (from FetchContent-populated source directory)
+set(IMGUI_SOURCES
+    ${imgui_SOURCE_DIR}/imgui.cpp
+    ${imgui_SOURCE_DIR}/imgui_draw.cpp
+    ${imgui_SOURCE_DIR}/imgui_tables.cpp
+    ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
+    ${imgui_SOURCE_DIR}/misc/freetype/imgui_freetype.cpp
+    ${imgui_SOURCE_DIR}/misc/cpp/imgui_stdlib.cpp
+)
+
 # Define source files
-set(IMGUI_DIR "../..")
 set(SOURCES
     src/main.cc
     src/texture.cc
@@ -64,14 +71,7 @@ set(SOURCES
     src/semver.cc
     src/installer/task_scheduler.cc
     src/installer/unzip.cc
-    vendor/imgui/src/imgui.cpp
-    vendor/imgui/src/imgui_draw.cpp
-    vendor/imgui/src/imgui_tables.cpp
-    vendor/imgui/src/imgui_widgets.cpp
-    vendor/imgui/src/imgui_impl_glfw.cpp
-    vendor/imgui/src/imgui_impl_opengl3.cpp
-    vendor/imgui/include/misc/freetype/imgui_freetype.cpp
-    vendor/imgui/src/imgui_stdlib.cpp
+    ${IMGUI_SOURCES}
 )
 
 # Add the executable
@@ -84,10 +84,15 @@ endif()
 
 # Include directories
 include_directories(src/include)
-include_directories(vendor/imgui/include)
-include_directories(vendor/imgui/extern)
-include_directories(vendor/nlohmann/include)
-include_directories(vendor/ini/src)
+include_directories(SYSTEM ${imgui_SOURCE_DIR})
+include_directories(SYSTEM ${imgui_SOURCE_DIR}/backends)
+include_directories(SYSTEM ${imgui_SOURCE_DIR}/misc/cpp)
+include_directories(SYSTEM ${imgui_markdown_SOURCE_DIR})
+include_directories(SYSTEM ${imspinner_SOURCE_DIR})
+include_directories(SYSTEM ${nlohmann_json_SOURCE_DIR}/include)
+include_directories(SYSTEM ${mini_SOURCE_DIR}/src)
+include_directories(SYSTEM ${stb_SOURCE_DIR})
+include_directories(SYSTEM ${zlib_SOURCE_DIR} ${zlib_BINARY_DIR})
 
 # Platform-specific settings
 if(UNIX AND NOT APPLE)
@@ -116,25 +121,19 @@ elseif(APPLE)
 
 elseif(WIN32)
     message(STATUS "Building on Windows")
-    find_package(Freetype REQUIRED)
-    find_package(Stb REQUIRED)
-    find_package(glfw3 CONFIG REQUIRED)
-    find_package(GLEW CONFIG REQUIRED)
-    find_package(CURL REQUIRED)
-    find_package(unofficial-minizip CONFIG REQUIRED) # used for extracting zip files
 
-    target_include_directories(${PROJECT_NAME} PRIVATE ${Stb_INCLUDE_DIR})
+    target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${minizip_ng_SOURCE_DIR})
 
     target_link_libraries(${PROJECT_NAME} PRIVATE
-        Freetype::Freetype
+        freetype
         glfw
         gdi32
         opengl32
-        GLEW::GLEW
+        libglew_static
         imm32
         CURL::libcurl
         dwmapi
-        unofficial::minizip::minizip
+        minizip
         winmm
         bcrypt
     )

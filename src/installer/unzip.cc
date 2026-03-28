@@ -30,7 +30,8 @@
 
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <minizip/unzip.h>
+#include <zlib.h>
+#include <mz_compat.h>
 #include <iostream>
 #include <filesystem>
 #include <thread>

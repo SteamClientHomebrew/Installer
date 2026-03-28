@@ -29,7 +29,8 @@
  */
 
  #include <filesystem>
- #include <minizip/unzip.h>
+ #include <zlib.h>
+ #include <mz_compat.h>
  
  #define WRITE_BUFFER_SIZE 8192
  
