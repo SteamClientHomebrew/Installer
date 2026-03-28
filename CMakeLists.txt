@@ -53,10 +53,11 @@ set(IMGUI_SOURCES
 # Define source files
 set(SOURCES
     src/main.cc
-    src/texture.cc
-    src/wndproc.cc
-    src/renderer.cc
-    src/updater.cc
+    src/window/texture.cc
+    src/window/wndproc.cc
+    src/window/renderer.cc
+    src/util/updater.cc
+    src/routes/router.cc
     src/routes/home.cc
     src/routes/install_prompt.cc
     src/routes/installer.cc
@@ -65,10 +66,9 @@ set(SOURCES
     src/components/checkbox.cc
     src/components/bottombar.cc
     src/components/message.cc
-    src/animate.cc
-    src/router.cc
-    src/dpi.cc
-    src/semver.cc
+    src/util/animate.cc
+    src/util/semver.cc
+    src/window/dpi.cc
     src/installer/task_scheduler.cc
     src/installer/unzip.cc
     ${IMGUI_SOURCES}
