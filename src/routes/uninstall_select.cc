@@ -38,13 +38,11 @@
 #include <router.h>
 #include <iostream>
 #include <dpi.h>
-#include <unordered_map>
 #include <components.h>
-#include <map>
 #include <filesystem>
 #include <imspinner.h>
 #include <util.h>
-#include <thread>
+#include <worker.h>
 
 using namespace ImGui;
 using namespace ImSpinner;
@@ -249,14 +247,14 @@ const void RenderComponents()
                     PushStyleVar(ImGuiStyleVar_WindowRounding, 6);
                     PushStyleVar(ImGuiStyleVar_Alpha, 1.f);
                     PushStyleColor(ImGuiCol_PopupBg, ImVec4(0.098f, 0.102f, 0.11f, 1.0f));
-                    SetTooltip(std::format("\"{}\" was excluded from the removal process.", component).c_str());
+                    SetTooltip("%s", std::format("\"{}\" was excluded from the removal process.", component).c_str());
                     PopStyleVar(3);
                     PopStyleColor();
                 }
 
                 SameLine(0, ScaleX(20));
                 SetCursorPosY(GetCursorPosY() + ScaleY(3));
-                Text(formattedComponent.c_str());
+                Text("%s", formattedComponent.c_str());
 
                 continue;
             }
@@ -272,7 +270,7 @@ const void RenderComponents()
                     EndChild();
                     SameLine(0, ScaleX(20));
                     SetCursorPosY(GetCursorPosY() + ScaleY(3));
-                    Text(formattedComponent.c_str());
+                    Text("%s", formattedComponent.c_str());
                     break;
                 }
                 case ComponentState::UninstallState::Success:
@@ -284,7 +282,7 @@ const void RenderComponents()
                     SameLine(0, ScaleX(20));
                     SetCursorPosY(GetCursorPosY() + ScaleY(3));
 
-                    Text((component + ": 0.00 B").c_str());
+                    Text("%s", (component + ": 0.00 B").c_str());
                     break;
                 }
                 case ComponentState::UninstallState::Failed:
@@ -306,7 +304,7 @@ const void RenderComponents()
 
                     SameLine(0, ScaleX(20));
                     SetCursorPosY(GetCursorPosY() + ScaleY(3));
-                    Text(formattedComponent.c_str());
+                    Text("%s", formattedComponent.c_str());
 
                     break;
                 }
@@ -421,7 +419,7 @@ const void RenderUninstallSelect(std::shared_ptr<RouterNav> router, float xPos)
                 std::cout << "Uninstalling components..." << std::endl;
 
                 isUninstalling = true;
-                std::thread(StartUninstall).detach();
+                GetWorker().run(StartUninstall);
             }
 
             if (isButtonHovered) {

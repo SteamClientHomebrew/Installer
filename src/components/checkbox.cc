@@ -33,11 +33,86 @@
 #include <router.h>
 #include <imgui.h>
 #include <imgui_internal.h>
-#include <iostream>
 #include <unordered_map>
 #include <animate.h>
 
 using namespace ImGui;
+
+void RenderCheckMarkPop(ImDrawList* draw_list, ImVec2 pos, ImU32 col, float sz, float progress)
+{
+    ImVec2 p0 = pos + ImVec2(0.2f * sz, 0.5f * sz);
+    ImVec2 p1 = pos + ImVec2(0.4f * sz, 0.7f * sz);
+    ImVec2 p2 = pos + ImVec2(0.8f * sz, 0.3f * sz);
+
+    if (progress < 0.5f) {
+        float t = progress / 0.5f;
+        ImVec2 mid = p0 + (p1 - p0) * t;
+        draw_list->AddLine(p0, mid, col, 2.0f);
+    } else {
+        draw_list->AddLine(p0, p1, col, 2.0f);
+        float t = (progress - 0.5f) / 0.5f;
+        ImVec2 mid = p1 + (p2 - p1) * t;
+        draw_list->AddLine(p1, mid, col, 2.0f);
+    }
+}
+
+/**
+ * override Imgui's internal implementation of the checkbox as it sucks.
+ * requires /FORCE:MULTIPLE on MSVC.
+ */
+bool ImGui::Checkbox(const char* label, bool* v)
+{
+    ImGuiWindow* window = ImGui::GetCurrentWindow();
+    if (window->SkipItems)
+        return false;
+
+    ImGuiContext& g = *GImGui;
+    const ImGuiStyle& style = g.Style;
+    const ImGuiID id = window->GetID(label);
+    const ImVec2 label_size = ImGui::CalcTextSize(label, NULL, true);
+
+    const float square_sz = ImGui::GetFrameHeight();
+    const ImVec2 pos = window->DC.CursorPos;
+    const ImRect total_bb(pos, pos + ImVec2(square_sz + (label_size.x > 0.0f ? style.ItemInnerSpacing.x + label_size.x : 0.0f), label_size.y + style.FramePadding.y * 2.0f));
+    ImGui::ItemSize(total_bb, style.FramePadding.y);
+    if (!ImGui::ItemAdd(total_bb, id))
+        return false;
+
+    bool hovered, held;
+    bool pressed = ImGui::ButtonBehavior(total_bb, id, &hovered, &held);
+    if (pressed) {
+        *v = !*v;
+        ImGui::MarkItemEdited(id);
+    }
+
+    static std::unordered_map<ImGuiID, float> g_CheckboxAnimProgress;
+    auto it = g_CheckboxAnimProgress.find(id);
+    if (it == g_CheckboxAnimProgress.end()) {
+        g_CheckboxAnimProgress[id] = *v ? 1.0f : 0.0f;
+    }
+    float& progress = g_CheckboxAnimProgress[id];
+    float speed = 6.0f;
+    progress += (*v ? 1.0f : -1.0f) * speed * g.IO.DeltaTime;
+    progress = ImClamp(progress, 0.0f, 1.0f);
+
+    ImRect check_bb(pos, pos + ImVec2(square_sz, square_sz));
+    ImU32 frame_col = ImGui::GetColorU32((held && hovered) ? ImGuiCol_FrameBgActive : hovered ? ImGuiCol_FrameBgHovered : ImGuiCol_FrameBg);
+    window->DrawList->AddRectFilled(check_bb.Min, check_bb.Max, frame_col, style.FrameRounding);
+
+    if (progress > 0.0f) {
+        ImU32 check_col = ImGui::GetColorU32(ImGuiCol_CheckMark);
+        const float pad = ImMax(1.0f, IM_TRUNC(square_sz / 6.0f));
+        ImVec2 anim_pos = check_bb.Min + ImVec2(pad, pad);
+        float size = square_sz - pad * 2.0f;
+        RenderCheckMarkPop(window->DrawList, anim_pos, check_col, size, progress);
+    }
+
+    const ImVec2 label_pos = ImVec2(check_bb.Max.x + style.ItemInnerSpacing.x, check_bb.Min.y + style.FramePadding.y);
+    if (label_size.x > 0.0f)
+        ImGui::RenderText(label_pos, label);
+
+    return pressed;
+}
 
 const CheckBoxState* RenderCheckBox(bool checked, std::string description, std::string tooltipText, bool disabled, bool endChild)
 {
@@ -66,7 +141,7 @@ const CheckBoxState* RenderCheckBox(bool checked, std::string description, std::
         EndChild();
         SameLine(0, ScaleX(20));
         SetCursorPosY(GetCursorPosY() + ScaleY(3));
-        Text(description.c_str());
+        Text("%s", description.c_str());
     } else {
         std::string checkBoxMessage = " " + std::string(description);
 
@@ -85,7 +160,7 @@ const CheckBoxState* RenderCheckBox(bool checked, std::string description, std::
             PushStyleVar(ImGuiStyleVar_Alpha, autoUpdateColor);
             PushStyleColor(ImGuiCol_PopupBg, ImVec4(0.098f, 0.102f, 0.11f, 1.0f));
 
-            SetTooltip(tooltipText.c_str());
+            SetTooltip("%s", tooltipText.c_str());
 
             PopStyleVar(3);
             PopStyleColor();

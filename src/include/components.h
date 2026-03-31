@@ -42,7 +42,7 @@ const void RenderUninstallSelect(std::shared_ptr<RouterNav> router, float xPos);
 
 const void RenderBottomNavBar(const char* identifier, float xPos, std::function<void()> buttonRenderCallback, bool setPosManually = false);
 
-void StartInstaller(std::string steamPath, nlohmann::json& releaseInfo, nlohmann::json& osReleaseInfo);
+void StartInstaller(std::string steamPath, nlohmann::json releaseInfo, nlohmann::json osReleaseInfo);
 void InitializeUninstaller();
 const bool FetchVersionInfo();
 

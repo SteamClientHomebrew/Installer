@@ -28,12 +28,13 @@
  * SOFTWARE.
  */
 
+#pragma once
 #include <GLFW/glfw3.h>
 
 extern float XDPI;
 extern float YDPI;
 
-void SetupDPI(GLFWwindow* monitor);
+void SetupDPI(GLFWwindow* window);
 
 float ScaleX(float x);
 float ScaleY(float y);

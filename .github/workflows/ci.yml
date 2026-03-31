@@ -20,24 +20,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          submodules: true
 
       - name: (Setup) Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 20
-
-      - name: Cache vcpkg
-        uses: actions/cache@v4
-        with:
-          path: |
-            vendor/vcpkg/installed
-            vendor/vcpkg/buildtrees
-            vendor/vcpkg/packages
-          key: vcpkg-windows-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
-          restore-keys: |
-            vcpkg-windows-${{ runner.os }}-
 
       - name: (Setup) Semantic Release
         run: npm install --save-dev semantic-release @semantic-release/github @semantic-release/exec @semantic-release/changelog @semantic-release/git
@@ -45,16 +32,16 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: (Setup) Get Next Version
-        run: . resources\version.ps1
+        run: . resources\versioning\version.ps1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build Millennium
         run: |
-          cmake --preset=release
-          cmake --build build --config Release
+          cmake --preset=windows-release
+          cmake --build build
           mkdir -p D:/a/build/unsigned
-          mv build/Release/Installer.exe D:/a/build/unsigned/MillenniumInstaller-Windows.exe
+          mv build/Installer.exe D:/a/build/unsigned/MillenniumInstaller-Windows.exe
 
       - name: Upload Build Artifact
         id: upload-unsigned-artifact
@@ -86,6 +73,6 @@ jobs:
           path: "signed-millennium/MillenniumInstaller-Windows.exe"
 
       - name: Create GitHub Release
-        run: npx semantic-release
+        run: cd resources/versioning && npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

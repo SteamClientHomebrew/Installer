@@ -32,14 +32,42 @@
 #include <string>
 #include <chrono>
 #include <thread>
+#include <unordered_map>
 #include <curl/curl.h>
 #include <iostream>
+#include <format>
+#include <nlohmann/json.hpp>
 #include "components.h"
 
 static size_t WriteByteCallback(char* ptr, size_t size, size_t nmemb, std::string* data)
 {
     data->append(ptr, size * nmemb);
     return size * nmemb;
+}
+
+static size_t HeaderCallback(char* buffer, size_t size, size_t nitems, void* userdata)
+{
+    size_t totalSize = size * nitems;
+    auto* headers = static_cast<std::unordered_map<std::string, std::string>*>(userdata);
+
+    std::string line(buffer, totalSize);
+
+    auto colonPos = line.find(':');
+    if (colonPos != std::string::npos) {
+        std::string key = line.substr(0, colonPos);
+        std::string value = line.substr(colonPos + 1);
+
+        // Lowercase the key for case-insensitive lookup
+        for (auto& c : key) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+
+        // Trim whitespace from value
+        value.erase(0, value.find_first_not_of(" \t"));
+        value.erase(value.find_last_not_of(" \t\r\n") + 1);
+
+        (*headers)[key] = value;
+    }
+
+    return totalSize;
 }
 
 namespace Http
@@ -50,6 +78,7 @@ struct Response
     std::string body;
     long statusCode = 0;
     CURLcode curlCode = CURLE_OK;
+    std::unordered_map<std::string, std::string> headers;
 
     bool ok() const
     {
@@ -57,7 +86,7 @@ struct Response
     }
     bool isRateLimited() const
     {
-        return statusCode == 403 || statusCode == 429;
+        return statusCode == 429 || (statusCode == 403 && body.find("rate limit") != std::string::npos);
     }
     bool isNotFound() const
     {
@@ -66,6 +95,82 @@ struct Response
     bool isNetworkError() const
     {
         return curlCode != CURLE_OK;
+    }
+
+    std::string networkErrorReason() const
+    {
+        switch (curlCode) {
+        case CURLE_COULDNT_RESOLVE_HOST:
+            return "DNS resolution failed — check your internet connection or DNS settings.";
+        case CURLE_COULDNT_RESOLVE_PROXY:
+            return "Could not resolve proxy — check your proxy configuration.";
+        case CURLE_COULDNT_CONNECT:
+            return "Connection refused — GitHub may be down, or a firewall/proxy is blocking the connection.";
+        case CURLE_OPERATION_TIMEDOUT:
+            return "Connection timed out — your internet may be slow or GitHub is unreachable.";
+        case CURLE_SSL_CONNECT_ERROR:
+        case CURLE_SSL_CERTPROBLEM:
+        case CURLE_SSL_CIPHER:
+        case CURLE_PEER_FAILED_VERIFICATION:
+        case CURLE_SSL_PINNEDPUBKEYNOTMATCH:
+            return "SSL/TLS error — a corporate proxy, antivirus, or misconfigured network may be interfering with secure connections.";
+        case CURLE_TOO_MANY_REDIRECTS:
+            return "Too many redirects — a captive portal or proxy may be intercepting the request.";
+        case CURLE_SEND_ERROR:
+        case CURLE_RECV_ERROR:
+            return "Connection was interrupted — check your network stability.";
+        case CURLE_FAILED_INIT:
+            return "Failed to initialize the HTTP client.";
+        default:
+            return std::string("Network error: ") + curl_easy_strerror(curlCode);
+        }
+    }
+
+    std::string rateLimitMessage() const
+    {
+        std::string msg;
+        if (statusCode == 429) {
+            msg = "Too many requests to the GitHub API.";
+        } else {
+            msg = "GitHub API rate limit exceeded.";
+        }
+
+        // Check for x-ratelimit-reset header to show retry time
+        auto it = headers.find("x-ratelimit-reset");
+        if (it != headers.end()) {
+            try {
+                long resetTime = std::stol(it->second);
+                auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+                long secondsLeft = resetTime - static_cast<long>(now);
+
+                if (secondsLeft > 0) {
+                    long minutes = (secondsLeft + 59) / 60;
+                    msg += std::format("\n\nYou can try again in {} {}.", minutes, minutes == 1 ? "minute" : "minutes");
+                } else {
+                    msg += "\n\nThe rate limit should have reset — try again now.";
+                }
+            } catch (...) {
+                msg += "\n\nPlease wait a few minutes and try again.";
+            }
+        } else {
+            msg += "\n\nPlease wait a few minutes and try again.";
+        }
+
+        msg += "\n\nGitHub allows 60 requests per hour for unauthenticated users.";
+        return msg;
+    }
+
+    std::string httpErrorMessage() const
+    {
+        // Try to extract GitHub's error message from the JSON response body
+        try {
+            auto json = nlohmann::json::parse(body);
+            if (json.contains("message") && json["message"].is_string()) {
+                return std::format("GitHub API error (HTTP {}): {}", statusCode, json["message"].get<std::string>());
+            }
+        } catch (...) {}
+
+        return std::format("Failed to fetch version information (HTTP {}). Please try again later.", statusCode);
     }
 };
 
@@ -82,6 +187,8 @@ static Response GetEx(const char* url, int maxRetries = 3, int timeoutSeconds = 
     curl_easy_setopt(curl, CURLOPT_URL, url);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteByteCallback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &result.body);
+    curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, HeaderCallback);
+    curl_easy_setopt(curl, CURLOPT_HEADERDATA, &result.headers);
     curl_easy_setopt(curl, CURLOPT_USERAGENT, "starlight/1.0");
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(curl, CURLOPT_TIMEOUT, static_cast<long>(timeoutSeconds));
@@ -203,11 +310,46 @@ static bool downloadFile(const std::string& url, const std::string& outputPath, 
 
     CURLcode res = curl_easy_perform(curl);
 
+    long httpCode = 0;
+    if (res == CURLE_HTTP_RETURNED_ERROR || res == CURLE_OK) {
+        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &httpCode);
+    }
+
     curl_easy_cleanup(curl);
     fclose(fp);
 
     if (res != CURLE_OK) {
-        ShowMessageBox("Whoops!", std::format("Failed to download file from URL: '{}'", url), Error);
+        std::string reason;
+        switch (res) {
+        case CURLE_COULDNT_RESOLVE_HOST:
+            reason = "DNS resolution failed — check your internet connection or DNS settings.";
+            break;
+        case CURLE_COULDNT_CONNECT:
+            reason = "Connection refused — the server may be down, or a firewall/proxy is blocking the connection.";
+            break;
+        case CURLE_OPERATION_TIMEDOUT:
+            reason = "Download timed out — your internet may be too slow or the server is unreachable.";
+            break;
+        case CURLE_SSL_CONNECT_ERROR:
+        case CURLE_SSL_CERTPROBLEM:
+        case CURLE_SSL_CIPHER:
+        case CURLE_PEER_FAILED_VERIFICATION:
+            reason = "SSL/TLS error — a corporate proxy, antivirus, or misconfigured network may be interfering.";
+            break;
+        case CURLE_SEND_ERROR:
+        case CURLE_RECV_ERROR:
+        case CURLE_PARTIAL_FILE:
+            reason = "Download was interrupted — check your network stability and try again.";
+            break;
+        case CURLE_HTTP_RETURNED_ERROR:
+            reason = std::format("Server returned HTTP error {}.", httpCode);
+            break;
+        default:
+            reason = std::string("Network error: ") + curl_easy_strerror(res);
+            break;
+        }
+
+        ShowMessageBox("Whoops!", std::format("Failed to download file.\n\n{}", reason), Error);
         return false;
     }
     return true;

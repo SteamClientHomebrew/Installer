@@ -35,13 +35,12 @@
 #include <memory>
 #include <router.h>
 #include <imgui_internal.h>
-#include <iostream>
 #include <dpi.h>
 #include <unordered_map>
 #include <components.h>
-#include <thread>
 #include <atomic>
 #include <imspinner.h>
+#include <worker.h>
 
 using namespace ImGui;
 using namespace ImSpinner;
@@ -174,7 +173,7 @@ const void RenderHome(std::shared_ptr<RouterNav> router, float xPos)
 
     PushStyleColor(ImGuiCol_Border, ImVec4(0.169f, 0.173f, 0.18f, 1.0f));
 
-    SetCursorPos({ xPos + (viewport->Size.x - ((ContainerWidth * 2) + ContainerSpacing)) / 2, ((viewport->Size.y - BottomNavBarHeight) / 2.0f) - ContainerHeight / 2 });
+    SetCursorPos({ xPos + (viewport->Size.x - ((ContainerWidth * 2) + ContainerSpacing)) / 2, ((viewport->Size.y - BottomNavBarHeight) / 2.0f) - ContainerHeight / 2.0f });
 
     RenderOption({ "Install", "Integrate Millennium into your Steam® Client.", INSTALL }, ContainerWidth, ContainerHeight, ContainerSpacing);
     RenderOption({ "Remove", "Selectively uninstall portions of Millennium.", REMOVE }, ContainerWidth, ContainerHeight, ContainerSpacing);
@@ -242,7 +241,7 @@ const void RenderHome(std::shared_ptr<RouterNav> router, float xPos)
                         isLoading.store(false, std::memory_order_relaxed);
                     };
 
-                    std::thread(StartInstall).detach();
+                    GetWorker().run(StartInstall);
                     break;
                 }
                 case REMOVE:
@@ -257,7 +256,7 @@ const void RenderHome(std::shared_ptr<RouterNav> router, float xPos)
                         isLoading.store(false, std::memory_order_relaxed);
                     };
 
-                    std::thread(StartUninstall).detach();
+                    GetWorker().run(StartUninstall);
                     break;
                 }
                 default:
@@ -298,7 +297,7 @@ const void RenderHome(std::shared_ptr<RouterNav> router, float xPos)
             PushStyleVar(ImGuiStyleVar_Alpha, toolTipOpacity);
 
             BeginTooltip();
-            Text(toolTipText);
+            Text("%s", toolTipText);
             EndTooltip();
 
             PopStyleVar(3);

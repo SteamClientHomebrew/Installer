@@ -48,15 +48,17 @@ void TaskScheduler::addTasks(const std::vector<Task>& newTasks)
 
 bool TaskScheduler::hasFailed() const
 {
+    std::lock_guard<std::mutex> lock(m_mutex);
     return m_hasAnyTaskFailed;
 }
 
 std::string TaskScheduler::getFailureReason() const
 {
+    std::lock_guard<std::mutex> lock(m_mutex);
     return m_failureReason;
 }
 
-double TaskScheduler::getProgress() const
+double TaskScheduler::getProgress_locked() const
 {
     if (tasks.empty()) {
         return 1.0;
@@ -72,19 +74,39 @@ double TaskScheduler::getProgress() const
     return completedTasksProgress + currentTaskContribution;
 }
 
+double TaskScheduler::getProgress() const
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    return getProgress_locked();
+}
+
 void TaskScheduler::run()
 {
     if (tasks.empty()) {
         return;
     }
 
-    for (currentTaskIndex = 0; currentTaskIndex < tasks.size(); currentTaskIndex++) {
-        std::cout << "[scheduler] starting task " << (currentTaskIndex + 1) << " of " << tasks.size() << std::endl;
-        currentTaskProgress = std::make_unique<double>(0.0);
-        TaskResult result = tasks[currentTaskIndex](currentTaskProgress);
+    for (size_t i = 0; i < tasks.size(); i++) {
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            currentTaskIndex = i;
+            currentTaskProgress = std::make_unique<double>(0.0);
+        }
 
-        std::cout << "[scheduler] task " << (currentTaskIndex + 1) << " finished: " << (result.success ? "success" : "failure") << " msg='" << result.message << "'" << std::endl;
+        std::cout << "[scheduler] starting task " << (i + 1) << " of " << tasks.size() << std::endl;
 
+        TaskResult result;
+        try {
+            result = tasks[i](currentTaskProgress);
+        } catch (const std::exception& e) {
+            result = { false, std::string("Unexpected error: ") + e.what() };
+        } catch (...) {
+            result = { false, "An unknown error occurred." };
+        }
+
+        std::cout << "[scheduler] task " << (i + 1) << " finished: " << (result.success ? "success" : "failure") << " msg='" << result.message << "'" << std::endl;
+
+        std::lock_guard<std::mutex> lock(m_mutex);
         if (!result.success) {
             m_hasAnyTaskFailed = true;
             m_failureReason = result.message;
@@ -92,8 +114,10 @@ void TaskScheduler::run()
         }
 
         *currentTaskProgress = std::min(1.0, *currentTaskProgress);
-        overallProgress = getProgress();
+        overallProgress = getProgress_locked();
     }
+
+    std::lock_guard<std::mutex> lock(m_mutex);
     overallProgress = 1.0;
     std::cout << "[scheduler] run() complete, overallProgress=" << overallProgress << std::endl;
 }

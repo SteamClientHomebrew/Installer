@@ -29,14 +29,15 @@
  */
 
  #include <filesystem>
- #include <minizip/unzip.h>
+ #include <zlib.h>
+ #include <mz_compat.h>
  
  #define WRITE_BUFFER_SIZE 8192
  
- void CreateNonExistentDirectories(std::filesystem::path path);
- 
+ bool CreateNonExistentDirectories(std::filesystem::path path);
+
  void ExtractZippedFile(unzFile zipfile, std::filesystem::path fileName);
- 
+
  bool IsDirectoryPath(const std::filesystem::path& path);
- 
- void ExtractZippedArchive(const char *zipFilePath, const char *outputDirectory, double* overallProgress, double* fileProgress);
+
+ bool ExtractZippedArchive(const char *zipFilePath, const char *outputDirectory, double* overallProgress, double* fileProgress);

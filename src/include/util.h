@@ -53,7 +53,7 @@ inline std::string BytesToReadableFormat(float bytes)
     }
 
     char buffer[32];
-    sprintf(buffer, "%.2f %s", bytes, suffixes[suffixIndex]);
+    snprintf(buffer, sizeof(buffer), "%.2f %s", bytes, suffixes[suffixIndex]);
 
     return std::string(buffer);
 }
