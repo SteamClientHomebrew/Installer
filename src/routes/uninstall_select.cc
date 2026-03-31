@@ -38,13 +38,11 @@
 #include <router.h>
 #include <iostream>
 #include <dpi.h>
-#include <unordered_map>
 #include <components.h>
-#include <map>
 #include <filesystem>
 #include <imspinner.h>
 #include <util.h>
-#include <thread>
+#include <worker.h>
 
 using namespace ImGui;
 using namespace ImSpinner;
@@ -421,7 +419,7 @@ const void RenderUninstallSelect(std::shared_ptr<RouterNav> router, float xPos)
                 std::cout << "Uninstalling components..." << std::endl;
 
                 isUninstalling = true;
-                std::thread(StartUninstall).detach();
+                GetWorker().run(StartUninstall);
             }
 
             if (isButtonHovered) {

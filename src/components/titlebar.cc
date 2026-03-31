@@ -33,8 +33,8 @@
 #include <dpi.h>
 #include <components.h>
 #include <animate.h>
-#include <iostream>
 #include <math.h>
+#include <worker.h>
 
 using namespace ImGui;
 
@@ -106,7 +106,8 @@ bool RenderTitleBarComponent(std::shared_ptr<RouterNav> router)
         PopStyleVar();
         EndChild();
 
-        if (IsItemClicked(ImGuiMouseButton_Left)) {
+        if (IsItemClicked(ImGuiMouseButton_Left) && !IsWorkerBusy()) {
+            JoinWorker();
             ExitProcess(0);
         }
 

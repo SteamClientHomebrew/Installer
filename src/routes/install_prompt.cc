@@ -38,15 +38,14 @@
 #include <router.h>
 #include <iostream>
 #include <dpi.h>
-#include <unordered_map>
 #include <components.h>
-#include <filesystem>
 #include <nlohmann/json.hpp>
 #include <http.h>
 #include <util.h>
 #include <imgui_markdown.h>
 #include <mini/ini.h>
 #include <format>
+#include <worker.h>
 
 using namespace ImGui;
 
@@ -429,7 +428,12 @@ const void RenderInstallPrompt(std::shared_ptr<RouterNav> router, float xPos)
         PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(currentColor, currentColor, currentColor, 1.0f));
 
         if (Button("Install", ImVec2(xPos + GetContentRegionAvail().x, GetContentRegionAvail().y))) {
-            std::thread(StartInstaller, steamPath, std::ref(selectedRelease), std::ref(osReleaseInfo)).detach();
+            auto path = steamPath;
+            auto release = selectedRelease;
+            auto osRelease = osReleaseInfo;
+            GetWorker().run([path, release, osRelease]() {
+                StartInstaller(path, release, osRelease);
+            });
             router->navigateNext();
         }
 
