@@ -38,15 +38,13 @@
 #include <imgui_stdlib.h>
 #include <imspinner.h>
 #include <dpi.h>
-#include <thread>
+#include <worker.h>
 #include <util.h>
 #include <nlohmann/json.hpp>
 #include <http.h>
 #include <task_scheduler.h>
 #include <unzip.h>
-#include <semver.h>
 #include <atomic>
-#include <format>
 #include <windows.h>
 #include <tlhelp32.h>
 
@@ -185,23 +183,11 @@ TaskScheduler::TaskResult DownloadReleaseAssets(std::unique_ptr<double>& progres
     }
 
     if (!VerifyDownloadSignature(fileName.string(), expectedSignature.substr(7))) {
+        std::filesystem::remove(fileName);
         return { false, "Downloaded file signature does not match expected signature." };
     }
 
     return { true, "success" };
-}
-
-static bool UsesNewInstallLayout(const std::string& tagName)
-{
-    std::string version = tagName;
-    if (!version.empty() && version[0] == 'v') {
-        version = version.substr(1);
-    }
-    try {
-        return semver::cmp(version, "2.35.0") > 0;
-    } catch (...) {
-        return false;
-    }
 }
 
 TaskScheduler::TaskResult InstallReleaseAssets(std::unique_ptr<double>& progress, const nlohmann::json& releaseInfo, const nlohmann::json& osReleaseInfo,
@@ -213,12 +199,8 @@ TaskScheduler::TaskResult InstallReleaseAssets(std::unique_ptr<double>& progress
     const auto fileName = std::filesystem::temp_directory_path() / osReleaseInfo["name"].get<std::string>();
     double currentFileProgress = 0.0;
 
-    std::string tagName = releaseInfo.contains("tag_name") ? releaseInfo["tag_name"].get<std::string>() : "";
-
-    if (UsesNewInstallLayout(tagName)) {
-        ExtractZippedArchive(fileName.string().c_str(), steamPath.c_str(), progress.get(), &currentFileProgress);
-    } else {
-        ExtractZippedArchive(fileName.string().c_str(), steamPath.c_str(), progress.get(), &currentFileProgress);
+    if (!ExtractZippedArchive(fileName.string().c_str(), steamPath.c_str(), progress.get(), &currentFileProgress)) {
+        return { false, "Failed to extract release assets. The download may be corrupt or the disk may be full." };
     }
 
     return { true, "success" };
@@ -233,7 +215,7 @@ void OnFinishInstall()
 
 std::string g_steamPath;
 
-void StartInstaller(std::string steamPath, nlohmann::json& releaseInfo, nlohmann::json& osReleaseInfo)
+void StartInstaller(std::string steamPath, nlohmann::json releaseInfo, nlohmann::json osReleaseInfo)
 {
     KillSteamProcess();
 
@@ -403,7 +385,7 @@ const void RenderInstaller(std::shared_ptr<RouterNav> router, float xPos)
         }
     }
 
-    if (!shouldRenderCompleteModal) {
+    if (!shouldRenderCompleteModal || hasFailed) {
         return;
     }
 
@@ -445,7 +427,7 @@ const void RenderInstaller(std::shared_ptr<RouterNav> router, float xPos)
         SetCursorPosX(xPos + GetCursorPosX() + GetContentRegionAvail().x - ButtonWidth);
 
         if (Button("Finish", { xPos + GetContentRegionAvail().x, GetContentRegionAvail().y })) {
-            std::thread(StartSteamFromPath, g_steamPath).detach();
+            StartSteamFromPath(g_steamPath);
         }
 
         if (isButtonHovered) {

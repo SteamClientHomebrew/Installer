@@ -33,6 +33,7 @@
 #include <functional>
 #include <string>
 #include <memory>
+#include <mutex>
 
 class TaskScheduler
 {
@@ -56,6 +57,9 @@ class TaskScheduler
     size_t getCurrentTaskIndex() const;
 
   private:
+    double getProgress_locked() const;
+
+    mutable std::mutex m_mutex;
     bool m_hasAnyTaskFailed;
     std::string m_failureReason;
 
