@@ -106,7 +106,6 @@ if(UNIX AND NOT APPLE)
 
     target_compile_options(${PROJECT_NAME} PRIVATE ${GLFW_CFLAGS})
     target_link_libraries(${PROJECT_NAME} PRIVATE ${GLFW_LDFLAGS} GL)
-
 elseif(APPLE)
     find_library(COCOA_LIBRARY Cocoa REQUIRED)
     find_library(IOKIT_LIBRARY IOKit REQUIRED)
@@ -121,7 +120,6 @@ elseif(APPLE)
         ${OPENGL_LIBRARY}
         ${GLFW_LIBRARY}
     )
-
 elseif(WIN32)
     target_include_directories(${PROJECT_NAME}
         SYSTEM PRIVATE ${minizip_ng_SOURCE_DIR}

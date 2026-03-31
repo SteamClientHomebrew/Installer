@@ -124,20 +124,20 @@ const bool FetchVersionInfo()
 
         if (response.isNetworkError()) {
             if (page == 1) {
-                ShowMessageBox("Whoops!", "Failed to connect to the GitHub API! Make sure you have a valid internet connection.", Error);
+                ShowMessageBox("Whoops!", std::format("Failed to connect to the GitHub API!\n\n{}", response.networkErrorReason()), Error);
                 return false;
             }
             break;
         }
 
         if (response.isRateLimited()) {
-            ShowMessageBox("Whoops!", "GitHub API rate limit exceeded. Please wait a few minutes and try again.", Error);
+            ShowMessageBox("Whoops!", response.rateLimitMessage(), Error);
             return false;
         }
 
         if (!response.ok()) {
             if (page == 1) {
-                ShowMessageBox("Whoops!", std::format("Failed to fetch version information (HTTP {}). Please try again later.", response.statusCode), Error);
+                ShowMessageBox("Whoops!", response.httpErrorMessage(), Error);
                 return false;
             }
             break;
