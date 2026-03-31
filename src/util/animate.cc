@@ -29,13 +29,8 @@
  */
 
 #include <animate.h>
-#include <cmath>
-#include <iostream>
-#include <chrono>
-#include <thread>
 #include <unordered_map>
 #include <imgui.h>
-#include <memory>
 #include <dpi.h>
 #include <mutex>
 

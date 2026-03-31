@@ -33,8 +33,6 @@
 
 #include <texture.hh>
 #include <memory.h>
-#include <vector>
-#include <iostream>
 #include <imgui.h>
 
 GLuint logoTexture;

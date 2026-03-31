@@ -29,7 +29,6 @@
  */
 
 #include <dpi.h>
-#include <iostream>
 #include <math.h>
 
 float XDPI = 1.0f;
@@ -40,9 +39,7 @@ void SetupDPI(GLFWwindow* window)
     if (!window) {
         return;
     }
-
     glfwGetWindowContentScale(window, &XDPI, &YDPI);
-    std::cout << "DPI Scale: " << XDPI << ", " << YDPI << std::endl;
 }
 
 /**

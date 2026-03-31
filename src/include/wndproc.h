@@ -38,3 +38,4 @@ extern bool isTitleBarHovered;
 
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 void SetBorderlessWindowStyle(GLFWwindow* window, std::shared_ptr<RouterNav> router);
+void SetWindowIcon(GLFWwindow* window);

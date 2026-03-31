@@ -29,7 +29,6 @@
  */
 
 #include <vector>
-#include <algorithm>
 #include <imgui.h>
 #include <router.h>
 #include <math.h>

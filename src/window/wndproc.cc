@@ -32,9 +32,11 @@
 #include <wndproc.h>
 #include <GLFW/glfw3native.h>
 #include <dwmapi.h>
-#include <iostream>
 #include <renderer.h>
 #include <dpi.h>
+#include <util.h>
+#include <memory.h>
+#include <stb_image.h>
 
 WNDPROC g_OriginalWindProcCallback;
 bool isTitleBarHovered = false;
@@ -107,4 +109,28 @@ void SetBorderlessWindowStyle(GLFWwindow* window, std::shared_ptr<RouterNav> rou
     g_OriginalWindProcCallback = (WNDPROC)GetWindowLongPtr(hWnd, GWLP_WNDPROC);
     SetWindowLongPtr(hWnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(WindowProc));
     SetWindowPos(hWnd, NULL, 0, 0, width, height, SWP_FRAMECHANGED | SWP_NOMOVE);
+}
+
+void SetWindowIcon(GLFWwindow* window)
+{
+    int width, height, channels;
+    ColorScheme colorScheme = GetWindowsColorScheme();
+
+    static const std::map<ColorScheme, std::tuple<const unsigned char*, size_t>> iconMap = {
+        { ColorScheme::Dark,  { windowIconDark, sizeof(windowIconDark) }   },
+        { ColorScheme::Light, { windowIconLight, sizeof(windowIconLight) } },
+    };
+
+    auto& icon = iconMap.at(colorScheme);
+    unsigned char* data = stbi_load_from_memory(std::get<0>(icon), std::get<1>(icon), &width, &height, &channels, 4);
+
+    if (!data)
+        return;
+
+    GLFWimage glfwIcon;
+    glfwIcon.pixels = data;
+    glfwIcon.width = width;
+    glfwIcon.height = height;
+    glfwSetWindowIcon(window, 1, &glfwIcon);
+    stbi_image_free(data);
 }
