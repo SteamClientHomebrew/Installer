@@ -10,7 +10,35 @@ on:
       - main
 
 jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Install Semantic Release
+        run: npm install --save-dev semantic-release @semantic-release/github @semantic-release/exec @semantic-release/changelog @semantic-release/git
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get Next Version
+        id: get_version
+        run: cd resources/versioning && npx semantic-release --dry-run --no-ci
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   build-windows:
+    needs: prepare
     permissions:
       contents: write
       issues: write
@@ -21,20 +49,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: (Setup) Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 20
-
-      - name: (Setup) Semantic Release
-        run: npm install --save-dev semantic-release @semantic-release/github @semantic-release/exec @semantic-release/changelog @semantic-release/git
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: (Setup) Get Next Version
-        run: . resources\versioning\version.ps1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Update Version
+        if: ${{ needs.prepare.outputs.version != '' }}
+        run: |
+          echo "# current version of millennium installer" > resources/versioning/version
+          echo "v${{ needs.prepare.outputs.version }}" >> resources/versioning/version
 
       - name: Build Millennium
         run: |
@@ -64,13 +83,23 @@ jobs:
           output-artifact-directory: "signed-millennium"
           wait-for-completion: true
 
-      - name: 📤 Upload Signed Build Release
+      - name: Upload Signed Build Release
         id: upload-signed-artifact
         uses: actions/upload-artifact@v4
         with:
           include-hidden-files: true
           name: millennium-windows-signed
           path: "signed-millennium/MillenniumInstaller-Windows.exe"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Install Semantic Release
+        run: npm install --save-dev semantic-release @semantic-release/github @semantic-release/exec @semantic-release/changelog @semantic-release/git
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create GitHub Release
         run: cd resources/versioning && npx semantic-release
