@@ -42,7 +42,6 @@
 #include <nlohmann/json.hpp>
 #include <http.h>
 #include <util.h>
-#include <imgui_markdown.h>
 #include <mini/ini.h>
 #include <format>
 #include <worker.h>
@@ -52,7 +51,6 @@ using namespace ImGui;
 const CheckBoxState* checkForUpdates;
 const CheckBoxState* automaticallyInstallUpdates;
 
-static ImGui::MarkdownConfig mdConfig;
 std::string latestReleaseTag;
 std::string installSizeStr;
 nlohmann::json releasesList, selectedRelease, osReleaseInfo;

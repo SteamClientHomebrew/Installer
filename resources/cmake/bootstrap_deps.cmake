@@ -78,25 +78,25 @@ set(JSON_Install       OFF CACHE BOOL "" FORCE)
 # ============================================================================
 include(FetchContent)
 
+set(THIRDPARTY_DIR "${CMAKE_SOURCE_DIR}/thirdparty")
 message(STATUS "[Installer] Fetching dependencies...")
 
 # Independent dependencies (built via FetchContent_MakeAvailable directly)
-FetchContent_Declare(zlib           GIT_REPOSITORY https://github.com/zlib-ng/zlib-ng.git           GIT_TAG 2.2.4               GIT_SHALLOW TRUE)
-FetchContent_Declare(glfw           GIT_REPOSITORY https://github.com/glfw/glfw.git                 GIT_TAG 3.4                 GIT_SHALLOW TRUE)
-FetchContent_Declare(glew           GIT_REPOSITORY https://github.com/Perlmint/glew-cmake.git       GIT_TAG glew-cmake-2.2.0    GIT_SHALLOW TRUE)
-FetchContent_Declare(nlohmann_json  GIT_REPOSITORY https://github.com/nlohmann/json.git             GIT_TAG v3.11.3             GIT_SHALLOW TRUE)
-FetchContent_Declare(mini           GIT_REPOSITORY https://github.com/metayeti/mINI.git             GIT_TAG 0.9.17              GIT_SHALLOW TRUE)
+FetchContent_Declare(zlib          URL "file://${THIRDPARTY_DIR}/zlib-ng-2.2.4.tar.gz"         DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
+FetchContent_Declare(glfw          URL "file://${THIRDPARTY_DIR}/glfw-3.4.tar.gz"              DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
+FetchContent_Declare(glew          URL "file://${THIRDPARTY_DIR}/glew-cmake-2.2.0.tar.gz"      DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
+FetchContent_Declare(nlohmann_json URL "file://${THIRDPARTY_DIR}/nlohmann_json-v3.11.3.tar.gz" DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
+FetchContent_Declare(mini          URL "file://${THIRDPARTY_DIR}/mini-0.9.17.tar.gz"           DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
 
 # Dependencies that need zlib built first (SOURCE_SUBDIR fakedir defers add_subdirectory)
-FetchContent_Declare(freetype       GIT_REPOSITORY https://github.com/freetype/freetype.git         GIT_TAG VER-2-13-3          GIT_SHALLOW TRUE SOURCE_SUBDIR fakedir)
-FetchContent_Declare(curl           GIT_REPOSITORY https://github.com/curl/curl.git                 GIT_TAG curl-8_11_1         GIT_SHALLOW TRUE SOURCE_SUBDIR fakedir)
-FetchContent_Declare(minizip_ng     GIT_REPOSITORY https://github.com/zlib-ng/minizip-ng.git        GIT_TAG 4.0.7               GIT_SHALLOW TRUE SOURCE_SUBDIR fakedir)
+FetchContent_Declare(freetype   URL "file://${THIRDPARTY_DIR}/freetype-2.13.3.tar.gz"   DOWNLOAD_EXTRACT_TIMESTAMP TRUE SOURCE_SUBDIR fakedir)
+FetchContent_Declare(curl       URL "file://${THIRDPARTY_DIR}/curl-8.11.1.tar.gz"       DOWNLOAD_EXTRACT_TIMESTAMP TRUE SOURCE_SUBDIR fakedir)
+FetchContent_Declare(minizip_ng URL "file://${THIRDPARTY_DIR}/minizip-ng-4.0.7.tar.gz"  DOWNLOAD_EXTRACT_TIMESTAMP TRUE SOURCE_SUBDIR fakedir)
 
 # Header-only / no-CMake dependencies (SOURCE_SUBDIR fakedir skips add_subdirectory)
-FetchContent_Declare(imgui          GIT_REPOSITORY https://github.com/ocornut/imgui.git             GIT_TAG master              GIT_SHALLOW TRUE SOURCE_SUBDIR fakedir)
-FetchContent_Declare(stb            GIT_REPOSITORY https://github.com/nothings/stb.git              GIT_TAG master              GIT_SHALLOW TRUE SOURCE_SUBDIR fakedir)
-FetchContent_Declare(imgui_markdown GIT_REPOSITORY https://github.com/juliettef/imgui_markdown.git  GIT_TAG main                GIT_SHALLOW TRUE SOURCE_SUBDIR fakedir)
-FetchContent_Declare(imspinner      GIT_REPOSITORY https://github.com/dalerank/imspinner.git        GIT_TAG master              GIT_SHALLOW TRUE SOURCE_SUBDIR fakedir)
+FetchContent_Declare(imgui     URL "file://${THIRDPARTY_DIR}/imgui-3c78afb.tar.gz"     DOWNLOAD_EXTRACT_TIMESTAMP TRUE SOURCE_SUBDIR fakedir)
+FetchContent_Declare(stb       URL "file://${THIRDPARTY_DIR}/stb-28d546d.tar.gz"       DOWNLOAD_EXTRACT_TIMESTAMP TRUE SOURCE_SUBDIR fakedir)
+FetchContent_Declare(imspinner URL "file://${THIRDPARTY_DIR}/imspinner-b50e1c8.tar.gz" DOWNLOAD_EXTRACT_TIMESTAMP TRUE SOURCE_SUBDIR fakedir)
 
 # ============================================================================
 # Build independent dependencies
@@ -119,7 +119,7 @@ endif()
 # ============================================================================
 # Download deferred dependencies (SOURCE_SUBDIR fakedir = download only)
 # ============================================================================
-FetchContent_MakeAvailable(freetype curl minizip_ng imgui stb imgui_markdown imspinner)
+FetchContent_MakeAvailable(freetype curl minizip_ng imgui stb imspinner)
 
 # ============================================================================
 # Patch curl warnings for MSVC (must happen before add_subdirectory)
