@@ -111,6 +111,11 @@ foreach(dep ${INDEPENDENT_DEPS})
     message(STATUS "[Installer] ${dep} completed in ${duration} seconds")
 endforeach()
 
+# Fix non-ASCII copyright symbol in GLEW .rc that breaks llvm-rc on CI
+if(EXISTS "${glew_SOURCE_DIR}/build/glew.rc")
+    file(WRITE "${glew_SOURCE_DIR}/build/glew.rc" "// intentionally blank\n")
+endif()
+
 # ============================================================================
 # Download deferred dependencies (SOURCE_SUBDIR fakedir = download only)
 # ============================================================================
