@@ -117,8 +117,8 @@ void SetWindowIcon(GLFWwindow* window)
     ColorScheme colorScheme = GetWindowsColorScheme();
 
     static const std::map<ColorScheme, std::tuple<const unsigned char*, size_t>> iconMap = {
-        { ColorScheme::Dark,  { windowIconDark, sizeof(windowIconDark) }   },
-        { ColorScheme::Light, { windowIconLight, sizeof(windowIconLight) } },
+        { ColorScheme::Light, { windowIconDark, sizeof(windowIconDark) }   },
+        { ColorScheme::Dark,  { windowIconLight, sizeof(windowIconLight) } },
     };
 
     auto& icon = iconMap.at(colorScheme);
