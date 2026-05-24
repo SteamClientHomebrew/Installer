@@ -41,5 +41,6 @@ void GLFWErrorCallback(int error, const char* description);
 void WindowRefreshCallback(GLFWwindow* window);
 void FrameBufferSizeCallback(GLFWwindow* window, int width, int height);
 void SetupImGuiScaling(GLFWwindow* window);
+void RequestFontRebuild();
 void SpawnRendererThread(GLFWwindow* window, const char* glsl_version, std::shared_ptr<RouterNav> router);
 void RenderImGui(GLFWwindow* window, std::shared_ptr<RouterNav> router);

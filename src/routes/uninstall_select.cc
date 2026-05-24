@@ -39,6 +39,7 @@
 #include <iostream>
 #include <dpi.h>
 #include <components.h>
+#include <i18n.h>
 #include <filesystem>
 #include <imspinner.h>
 #include <util.h>
@@ -105,6 +106,17 @@ ComponentProps MakeComponentProps(std::vector<std::filesystem::path> pathList)
 }
 
 std::vector<std::pair<std::string, std::tuple<ComponentState, ComponentProps>>> uninstallComponents;
+
+/** Map stable internal IDs to locale keys */
+static const char* GetComponentLocaleName(const std::string& id)
+{
+    if (id == "Millennium")              return Locale::Get("componentMillennium");
+    if (id == "Custom Steam Components") return Locale::Get("componentCustomSteam");
+    if (id == "Dependencies")            return Locale::Get("componentDependencies");
+    if (id == "Themes")                  return Locale::Get("componentThemes");
+    if (id == "Plugins")                 return Locale::Get("componentPlugins");
+    return id.c_str();
+}
 
 // clang-format off
 void InitializeUninstaller()
@@ -225,7 +237,7 @@ const void RenderComponents()
             strPathList += path + "\n";
         }
 
-        std::string formattedComponent = component + ": " + BytesToReadableFormat(props.byteSize);
+        std::string formattedComponent = std::string(GetComponentLocaleName(component)) + ": " + BytesToReadableFormat(props.byteSize);
 
         BeginChild(component.c_str(), { ScaleX(35), ScaleY(35) }, false, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
         {
@@ -247,7 +259,7 @@ const void RenderComponents()
                     PushStyleVar(ImGuiStyleVar_WindowRounding, 6);
                     PushStyleVar(ImGuiStyleVar_Alpha, 1.f);
                     PushStyleColor(ImGuiCol_PopupBg, ImVec4(0.098f, 0.102f, 0.11f, 1.0f));
-                    SetTooltip("%s", std::format("\"{}\" was excluded from the removal process.", component).c_str());
+                    SetTooltip(Locale::Get("uninstallExcluded"), GetComponentLocaleName(component));
                     PopStyleVar(3);
                     PopStyleColor();
                 }
@@ -297,7 +309,7 @@ const void RenderComponents()
                         PushStyleVar(ImGuiStyleVar_WindowRounding, 6);
                         PushStyleVar(ImGuiStyleVar_Alpha, 1.f);
                         PushStyleColor(ImGuiCol_PopupBg, ImVec4(0.098f, 0.102f, 0.11f, 1.0f));
-                        SetTooltip("Failed to uninstall \"%s\".\n\nError: %s", component.c_str(), state.uninstallState.errorMessage.value_or("Unknown error").c_str());
+                        SetTooltip(Locale::Get("uninstallFailed"), GetComponentLocaleName(component), state.uninstallState.errorMessage.value_or("Unknown error").c_str());
                         PopStyleVar(3);
                         PopStyleColor();
                     }
@@ -343,12 +355,12 @@ const void RenderUninstallSelect(std::shared_ptr<RouterNav> router, float xPos)
     BeginChild("##PromptContainer", ImVec2(PromptContainerWidth, PromptContainerHeight), false);
     {
         PushFont(io.Fonts->Fonts[1]);
-        Text("Uninstall Millennium 🙁");
+        Text("%s", Locale::Get("uninstallTitle"));
         PopFont();
 
         SetCursorPosY(GetCursorPosY() + ScaleY(5));
         PushStyleColor(ImGuiCol_Text, ImVec4(0.422f, 0.425f, 0.441f, 1.0f));
-        TextWrapped("Select the components you would like to remove.");
+        TextWrapped("%s", Locale::Get("uninstallSubtitle"));
 
         SetCursorPosY(GetCursorPosY() + ScaleY(30));
         RenderComponents();
@@ -357,8 +369,8 @@ const void RenderUninstallSelect(std::shared_ptr<RouterNav> router, float xPos)
         Separator();
         SetCursorPosY(GetCursorPosY() + ScaleY(5));
 
-        Text("Uninstalling from: %s", steamPath.string().c_str());
-        Text("Reclaimed Disk Space: %s", GetReclaimedSpace().c_str());
+        Text(Locale::Get("uninstallFrom"), steamPath.string().c_str());
+        Text(Locale::Get("uninstallSpace"), GetReclaimedSpace().c_str());
 
         PopStyleColor();
     }
@@ -376,7 +388,7 @@ const void RenderUninstallSelect(std::shared_ptr<RouterNav> router, float xPos)
             PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(currentColor, currentColor, currentColor, 1.0f));
             PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.8f, 0.8f, 0.8f, 1.0f));
 
-            if (Button("Exit", ImVec2(xPos + GetContentRegionAvail().x, GetContentRegionAvail().y))) {
+            if (Button(Locale::Get("uninstallExit"), ImVec2(xPos + GetContentRegionAvail().x, GetContentRegionAvail().y))) {
                 std::exit(0);
             }
 
@@ -415,7 +427,7 @@ const void RenderUninstallSelect(std::shared_ptr<RouterNav> router, float xPos)
             PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(currentColor, currentColor, currentColor, 1.0f));
             PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.8f, 0.8f, 0.8f, 1.0f));
 
-            if (Button("Uninstall", ImVec2(xPos + GetContentRegionAvail().x, GetContentRegionAvail().y))) {
+            if (Button(Locale::Get("uninstallButton"), ImVec2(xPos + GetContentRegionAvail().x, GetContentRegionAvail().y))) {
                 std::cout << "Uninstalling components..." << std::endl;
 
                 isUninstalling = true;

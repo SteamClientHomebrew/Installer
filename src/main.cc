@@ -37,6 +37,7 @@
 #include <wndproc.h>
 #include <dpi.h>
 #include <components.h>
+#include <i18n.h>
 #include <iostream>
 #include <thread>
 #include "updater.h"
@@ -122,6 +123,7 @@ GLFWwindow* CreateWindowContext(GLFWmonitor* monitor)
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
     AllocateDeveloperConsoleIfNeeded();
+    Locale::Initialize();
     CheckForAndDownloadUpdates();
 
     MMRESULT result = timeBeginPeriod(1);

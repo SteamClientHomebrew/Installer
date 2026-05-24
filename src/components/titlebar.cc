@@ -33,8 +33,10 @@
 #include <dpi.h>
 #include <components.h>
 #include <animate.h>
+#include <i18n.h>
 #include <math.h>
 #include <worker.h>
+#include <renderer.h>
 
 using namespace ImGui;
 
@@ -44,8 +46,7 @@ using namespace ImGui;
  */
 bool RenderTitleBarComponent(std::shared_ptr<RouterNav> router)
 {
-    ImGuiIO& io = GetIO();
-    const std::string strTitleText = std::format("Steam Homebrew", io.Framerate);
+    const std::string strTitleText = Locale::Get("titlebarTitle");
 
     ImGuiViewport* viewport = GetMainViewport();
     PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(ScaleX(15), ScaleY(15)));
@@ -88,13 +89,14 @@ bool RenderTitleBarComponent(std::shared_ptr<RouterNav> router)
         Text("%s", strTitleText.c_str());
         SameLine();
 
+        ImVec2 closeButtonDimensions = { ceil(ScaleX(70)), ceil(ScaleY(43)) };
+
         static bool isCloseButtonHovered = false;
 
         if (isCloseButtonHovered) {
             PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.769f, 0.169f, 0.11f, 1.0f));
         }
 
-        ImVec2 closeButtonDimensions = { ceil(ScaleX(70)), ceil(ScaleY(43)) };
         SetCursorPos({ viewport->Size.x - closeButtonDimensions.x, 0 });
 
         PushStyleVar(ImGuiStyleVar_ChildRounding, 0);
@@ -121,4 +123,79 @@ bool RenderTitleBarComponent(std::shared_ptr<RouterNav> router)
     PopStyleVar();
 
     return IsItemHovered() || (IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem) && IsMouseDown(ImGuiMouseButton_Left));
+}
+
+/**
+ * Render the language selector dropdown in the main window scope (below the
+ * WndProc drag zone, top-right of the content area).  Must be called from
+ * the root Begin/End block, NOT from inside a BeginChild.
+ */
+void RenderLanguageSelector(float xPos)
+{
+    ImGuiViewport* viewport = GetMainViewport();
+
+    const auto&        langs         = Locale::GetAvailableLanguages();
+    const std::string& currentLangId = Locale::GetCurrentLanguageId();
+
+    std::string previewValue;
+    for (const auto& lang : langs) {
+        if (lang.id == currentLangId) { previewValue = lang.displayName; break; }
+    }
+    if (previewValue.empty()) previewValue = currentLangId;
+
+    const float langSelectorWidth = ScaleX(170);
+    // ScaleY(105): safely below the WndProc drag zone (ScaleY(100)), top-right of content
+    // Right edge aligned with bottom nav bar button edge (WindowPadding = ScaleX(30))
+    SetCursorPos({ xPos + viewport->Size.x - langSelectorWidth - ScaleX(30), ScaleY(105) });
+
+    PushStyleColor(ImGuiCol_FrameBg,        ImVec4(0.13f, 0.14f, 0.15f, 1.0f));
+    PushStyleColor(ImGuiCol_FrameBgHovered,  ImVec4(0.19f, 0.20f, 0.21f, 1.0f));
+    PushStyleColor(ImGuiCol_FrameBgActive,   ImVec4(0.16f, 0.17f, 0.18f, 1.0f));
+    PushStyleColor(ImGuiCol_PopupBg,         ImVec4(0.10f, 0.10f, 0.11f, 1.0f));
+    PushStyleColor(ImGuiCol_Header,          ImVec4(0.20f, 0.21f, 0.22f, 1.0f));
+    PushStyleColor(ImGuiCol_HeaderHovered,   ImVec4(0.26f, 0.27f, 0.28f, 1.0f));
+    PushStyleColor(ImGuiCol_Border,          ImVec4(0.22f, 0.23f, 0.25f, 1.0f));
+    PushStyleVar(ImGuiStyleVar_FrameRounding, ScaleX(4));
+    PushStyleVar(ImGuiStyleVar_FramePadding,  ImVec2(ScaleX(8), ScaleY(7)));
+    PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(ScaleX(8), 0));
+
+    // Fonts[2] = VietName_Standalone: pushed for the Vietnamese item only.
+    // Fonts[3] = Geist+CJK+VietPreview: present only when Vietnamese is active;
+    //            pushed around the entire combo so it looks the same as English mode.
+    ImGuiIO& io = GetIO();
+    ImFont* vietItemFont = (io.Fonts->Fonts.Size > 2) ? io.Fonts->Fonts[2] : nullptr;
+    ImFont* dropdownFont = (io.Fonts->Fonts.Size > 3) ? io.Fonts->Fonts[3] : nullptr;
+
+    if (dropdownFont) PushFont(dropdownFont);
+
+    SetNextItemWidth(langSelectorWidth);
+    if (BeginCombo("##LangSelector", previewValue.c_str())) {
+        for (const auto& lang : langs) {
+            bool isSelected = (lang.id == currentLangId);
+            bool useVietFont = (lang.id == "vietnamese") && (vietItemFont != nullptr);
+            if (useVietFont) {
+                if (dropdownFont) PopFont();
+                PushFont(vietItemFont);
+            }
+            if (Selectable(lang.displayName.c_str(), isSelected)) {
+                Locale::SetLanguage(lang.id);
+                RequestFontRebuild();
+            }
+            if (isSelected)
+                SetItemDefaultFocus();
+            if (useVietFont) {
+                PopFont();
+                if (dropdownFont) PushFont(dropdownFont);
+            }
+        }
+        EndCombo();
+    }
+
+    if (dropdownFont) PopFont();
+
+    if (IsItemHovered())
+        SetMouseCursor(ImGuiMouseCursor_Hand);
+
+    PopStyleVar(3);
+    PopStyleColor(7);
 }
