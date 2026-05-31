@@ -145,8 +145,8 @@ void RenderLanguageSelector(float xPos)
 
     const float langSelectorWidth = ScaleX(170);
     // ScaleY(105): safely below the WndProc drag zone (ScaleY(100)), top-right of content
-    // Right edge aligned with bottom nav bar button edge (WindowPadding = ScaleX(30))
-    SetCursorPos({ xPos + viewport->Size.x - langSelectorWidth - ScaleX(30), ScaleY(105) });
+    // Right edge aligned with the right edge of the option cards (ScaleX(35))
+    SetCursorPos({ xPos + viewport->Size.x - langSelectorWidth - ScaleX(35), ScaleY(105) });
 
     PushStyleColor(ImGuiCol_FrameBg,        ImVec4(0.13f, 0.14f, 0.15f, 1.0f));
     PushStyleColor(ImGuiCol_FrameBgHovered,  ImVec4(0.19f, 0.20f, 0.21f, 1.0f));
