@@ -47,6 +47,15 @@ def find_first(*paths):
             return p
     return None
 
+LATIN_FALLBACKS = ("DejaVu", "LiberationSans", "FreeSans")
+
+CJK_INDICATORS = (
+    "CJK", "Gothic", "Mincho", "Song", "Hei", "Ming",
+    "Source Han", "WenQuanYi", "Nanum", "Malgun", "YaHei",
+    "PingFang", "Hiragino", "msyh", "simsun", "msjh",
+    "NotoSansCJK", "NotoSerifCJK", "wqy",
+)
+
 def fc_match(lang_tag):
     """Ask fontconfig for the best font for a language tag (Linux/macOS)."""
     try:
@@ -55,10 +64,26 @@ def fc_match(lang_tag):
             capture_output=True, text=True, timeout=5
         )
         path = result.stdout.strip()
-        for fallback in ("DejaVu", "LiberationSans", "FreeSans"):
-            if fallback in path:
+        for name in LATIN_FALLBACKS:
+            if name in path:
                 return None
         return path if path and os.path.exists(path) else None
+    except Exception:
+        return None
+
+def fc_list_first(lang_tag):
+    """Return the first font file that fontconfig declares support for lang_tag.
+    Unlike fc-match, fc-list only returns fonts that genuinely cover the language."""
+    try:
+        result = subprocess.run(
+            ["fc-list", f":lang={lang_tag}", "--format=%{file}\n"],
+            capture_output=True, text=True, timeout=5
+        )
+        for line in result.stdout.splitlines():
+            path = line.strip()
+            if path and os.path.exists(path):
+                return path
+        return None
     except Exception:
         return None
 
@@ -75,21 +100,24 @@ elif system == "Darwin":
         "/Library/Fonts/Arial.ttf",
         "/System/Library/Fonts/Supplemental/Arial.ttf",
     )
-    CJK_IDEO_FONT   = fc_match("zh") or find_first("/System/Library/Fonts/PingFang.ttc")
+    CJK_IDEO_FONT   = fc_list_first("zh") or find_first("/System/Library/Fonts/PingFang.ttc")
     CJK_IDEO_FNUM   = 0
-    CJK_KOREAN_FONT = fc_match("ko") or find_first("/System/Library/Fonts/AppleSDGothicNeo.ttc")
+    CJK_KOREAN_FONT = fc_list_first("ko") or find_first("/System/Library/Fonts/AppleSDGothicNeo.ttc")
 else:  # Linux
     LATIN_FONT_REG  = find_first(
         "/usr/share/fonts/truetype/msttcorefonts/Arial.ttf",
         "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
-    )
-    CJK_IDEO_FONT   = fc_match("zh")
+    ) or fc_match("vi") or fc_match("la")
+    CJK_IDEO_FONT   = fc_list_first("zh")
     CJK_IDEO_FNUM   = 0
-    CJK_KOREAN_FONT = fc_match("ko")
+    CJK_KOREAN_FONT = fc_list_first("ko")
 
 # ── pyftsubset wrapper ────────────────────────────────────────────────────────
 
 def run_pyftsubset(source, output, *, unicodes=None, text=None, font_number=None):
+    # TTC collections always need a font-number; default to 0 (Regular weight)
+    if font_number is None and source.endswith(".ttc"):
+        font_number = 0
     cmd = [sys.executable, "-m", "fontTools.subset", source,
            f"--output-file={output}", "--no-layout-closure",
            "--ignore-missing-unicodes"]
@@ -115,17 +143,21 @@ def bytes_to_cpp_array(name, data):
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
-    errors = []
     if not LATIN_FONT_REG:
-        errors.append("Arial not found (needed for viet_name.h)")
-    if not CJK_IDEO_FONT:
-        errors.append("CJK ideograph font not found (needed for cjk_names.h)")
-    if not CJK_KOREAN_FONT:
-        errors.append("Korean font not found (needed for cjk_names.h)")
-    if errors:
-        print("ERROR: missing fonts:")
-        for e in errors: print(f"  - {e}")
+        print("ERROR: no Latin/Vietnamese font found (needed for viet_name.h)")
+        print("  Install a font covering Latin Extended Additional (e.g. 'ttf-liberation' or 'noto-fonts')")
         sys.exit(1)
+
+    missing_cjk = []
+    if not CJK_IDEO_FONT:
+        missing_cjk.append("CJK ideograph font (zh)")
+    if not CJK_KOREAN_FONT:
+        missing_cjk.append("Korean font (ko)")
+    has_cjk = not missing_cjk
+    if missing_cjk:
+        print("WARNING: no CJK fonts found — writing stub cjk_names.h (CJK_FONTS_UNAVAILABLE):")
+        for m in missing_cjk: print(f"  - {m}")
+        print("  Install a CJK font (e.g. 'noto-fonts-cjk') to get real CJK font embedding")
 
     tmp = tempfile.mkdtemp()
     try:
@@ -139,7 +171,8 @@ def main():
         VIET_SA_UNICODES = "U+0020,U+0054,U+0056,U+0067,U+0069,U+006E,U+0074,U+1EBF,U+1EC7"
         print(f"viet_name.h <-{LATIN_FONT_REG}")
         tmp_viet_sa = os.path.join(tmp, "viet_name_standalone.ttf")
-        run_pyftsubset(LATIN_FONT_REG, tmp_viet_sa, unicodes=VIET_SA_UNICODES)
+        latin_font_number = 0 if LATIN_FONT_REG.endswith(".ttc") else None
+        run_pyftsubset(LATIN_FONT_REG, tmp_viet_sa, unicodes=VIET_SA_UNICODES, font_number=latin_font_number)
         viet_sa_data = open(tmp_viet_sa, "rb").read()
 
         out = os.path.join(OUT_DIR, "viet_name.h")
@@ -154,37 +187,50 @@ def main():
             f.write("\n")
         print(f"  ->{os.path.relpath(out, REPO_ROOT)}  ({len(viet_sa_data):,} bytes)")
 
-        # ── cjk_names.h — ideographs (msyh.ttc, font 0) ──────────────────────
-        IDEO_CHARS   = "简体中文繁體日本語"
-        KOREAN_CHARS = "한국어"
-
-        print(f"cjk_names.h (ideographs) <-{CJK_IDEO_FONT}")
-        tmp_ideo = os.path.join(tmp, "cjk_ideographs.ttf")
-        run_pyftsubset(CJK_IDEO_FONT, tmp_ideo,
-                       text=IDEO_CHARS, font_number=CJK_IDEO_FNUM)
-        ideo_data = open(tmp_ideo, "rb").read()
-
-        print(f"cjk_names.h (Korean)      <-{CJK_KOREAN_FONT}")
-        tmp_ko = os.path.join(tmp, "cjk_korean.ttf")
-        run_pyftsubset(CJK_KOREAN_FONT, tmp_ko, text=KOREAN_CHARS)
-        korean_data = open(tmp_ko, "rb").read()
-
+        # ── cjk_names.h — ideographs + Korean ────────────────────────────────
         out = os.path.join(OUT_DIR, "cjk_names.h")
-        with open(out, "w", encoding="utf-8") as f:
-            f.write("// Auto-generated — do not edit.\n")
-            f.write("// Minimal CJK font subsets for language-selector display names.\n")
-            f.write(f"// Ideograph source: {os.path.basename(CJK_IDEO_FONT)}"
-                    f"  chars: {IDEO_CHARS}\n")
-            f.write(f"// Korean source:    {os.path.basename(CJK_KOREAN_FONT)}"
-                    f"  chars: {KOREAN_CHARS}\n")
-            f.write("// Regenerate: python tools/generate_font_headers.py\n")
-            f.write("#pragma once\n\n")
-            f.write(bytes_to_cpp_array("CJKNames_Ideographs", ideo_data))
-            f.write("\n\n")
-            f.write(bytes_to_cpp_array("CJKNames_Korean", korean_data))
-            f.write("\n")
-        print(f"  ->{os.path.relpath(out, REPO_ROOT)}"
-              f"  (ideographs {len(ideo_data):,} B + Korean {len(korean_data):,} B)")
+        if has_cjk:
+            IDEO_CHARS   = "简体中文繁體日本語"
+            KOREAN_CHARS = "한국어"
+
+            print(f"cjk_names.h (ideographs) <-{CJK_IDEO_FONT}")
+            tmp_ideo = os.path.join(tmp, "cjk_ideographs.ttf")
+            run_pyftsubset(CJK_IDEO_FONT, tmp_ideo,
+                           text=IDEO_CHARS, font_number=CJK_IDEO_FNUM)
+            ideo_data = open(tmp_ideo, "rb").read()
+
+            print(f"cjk_names.h (Korean)      <-{CJK_KOREAN_FONT}")
+            tmp_ko = os.path.join(tmp, "cjk_korean.ttf")
+            run_pyftsubset(CJK_KOREAN_FONT, tmp_ko, text=KOREAN_CHARS)
+            korean_data = open(tmp_ko, "rb").read()
+
+            with open(out, "w", encoding="utf-8") as f:
+                f.write("// Auto-generated — do not edit.\n")
+                f.write("// Minimal CJK font subsets for language-selector display names.\n")
+                f.write(f"// Ideograph source: {os.path.basename(CJK_IDEO_FONT)}"
+                        f"  chars: {IDEO_CHARS}\n")
+                f.write(f"// Korean source:    {os.path.basename(CJK_KOREAN_FONT)}"
+                        f"  chars: {KOREAN_CHARS}\n")
+                f.write("// Regenerate: python tools/generate_font_headers.py\n")
+                f.write("#pragma once\n\n")
+                f.write(bytes_to_cpp_array("CJKNames_Ideographs", ideo_data))
+                f.write("\n\n")
+                f.write(bytes_to_cpp_array("CJKNames_Korean", korean_data))
+                f.write("\n")
+            print(f"  ->{os.path.relpath(out, REPO_ROOT)}"
+                  f"  (ideographs {len(ideo_data):,} B + Korean {len(korean_data):,} B)")
+        else:
+            with open(out, "w", encoding="utf-8") as f:
+                f.write("// Auto-generated — do not edit.\n")
+                f.write("// CJK fonts not found at generation time; CJK language options will\n")
+                f.write("// render without dedicated ideograph/hangul font subsets.\n")
+                f.write("// Install noto-fonts-cjk (or equivalent) and re-run:\n")
+                f.write("//   python tools/generate_font_headers.py\n")
+                f.write("#pragma once\n\n")
+                f.write("#define CJK_FONTS_UNAVAILABLE\n\n")
+                f.write("static const unsigned char CJKNames_Ideographs[] = {0};\n")
+                f.write("static const unsigned char CJKNames_Korean[]     = {0};\n")
+            print(f"  ->{os.path.relpath(out, REPO_ROOT)}  (stub — no CJK fonts found)")
 
     finally:
         shutil.rmtree(tmp)

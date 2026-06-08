@@ -28,6 +28,7 @@
  * SOFTWARE.
  */
 
+#include <exception>
 #include <imgui.h>
 #include <texture.hh>
 #include <dpi.h>
@@ -39,6 +40,9 @@
 #include <renderer.h>
 #include <cstdlib>
 #include <format>
+#ifndef _WIN32
+#include <unistd.h>
+#endif
 
 using namespace ImGui;
 
@@ -99,6 +103,101 @@ bool RenderTitleBarComponent(std::shared_ptr<RouterNav> router)
             PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.769f, 0.169f, 0.11f, 1.0f));
         }
 
+        static bool langPopupOpen = false;
+
+        ImVec2 langButtonDimensions = { ceil(ScaleX(50)), ceil(ScaleY(43)) };
+        SetCursorPos({ viewport->Size.x - closeButtonDimensions.x - langButtonDimensions.x, 0 });
+
+        PushStyleVar(ImGuiStyleVar_ChildRounding, 0);
+        PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.f, 0.f, 0.f, 0.f));
+        static bool isLangButtonHovered = false;
+        if (isLangButtonHovered)
+            PushStyleColor(ImGuiCol_ChildBg, ImVec4(1.f, 1.f, 1.f, 0.06f));
+
+        BeginChild("##LangButton", { langButtonDimensions.x, langButtonDimensions.y }, false, ImGuiWindowFlags_NoScrollbar);
+        {
+            SetCursorPos({ (langButtonDimensions.x - ScaleX(20)) * 0.5f, ScaleY(12) });
+            Image((ImTextureID)(intptr_t)languageIconTexture, { ScaleX(20), ScaleY(20) });
+        }
+        EndChild();
+
+        ImVec2 langBtnMin = GetItemRectMin();
+        ImVec2 langBtnMax = GetItemRectMax();
+
+        if (isLangButtonHovered)
+            PopStyleColor();
+        PopStyleColor();
+        PopStyleVar();
+
+        if (IsItemClicked(ImGuiMouseButton_Left))
+            OpenPopup("##LangPopup");
+
+        if (IsItemHovered())
+            SetMouseCursor(ImGuiMouseCursor_Hand);
+
+        isLangButtonHovered = IsItemHovered();
+
+        ImGuiIO& io = GetIO();
+        ImFont* vietItemFont = (io.Fonts->Fonts.Size > 2) ? io.Fonts->Fonts[2] : nullptr;
+        ImFont* dropdownFont = (io.Fonts->Fonts.Size > 3) ? io.Fonts->Fonts[3] : nullptr;
+
+        const auto& langs = Locale::GetAvailableLanguages();
+        const std::string& currentLangId = Locale::GetCurrentLanguageId();
+
+        const float popupWidth = ScaleX(400);
+        float anim = EaseInOutFloat("##LangPopupAnim", 0.f, 1.f, IsPopupOpen("##LangPopup"), 0.35f);
+
+        float popupY = langBtnMax.y - ScaleY(6) * (1.f - anim);
+        SetNextWindowPos({ langBtnMax.x - popupWidth, popupY });
+        SetNextWindowSize({ popupWidth, ScaleY(500) });
+        SetNextWindowBgAlpha(anim);
+
+        PushStyleColor(ImGuiCol_PopupBg, ImVec4(0.10f, 0.10f, 0.11f, 1.0f));
+        PushStyleColor(ImGuiCol_Header, ImVec4(0.20f, 0.21f, 0.22f, 1.0f));
+        PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.26f, 0.27f, 0.28f, 1.0f));
+        PushStyleColor(ImGuiCol_Border, ImVec4(0.22f, 0.23f, 0.25f, 1.0f));
+        PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(ScaleX(6), ScaleY(6)));
+        PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(ScaleX(8), ScaleY(6)));
+        PushStyleVar(ImGuiStyleVar_PopupRounding, ScaleX(4));
+
+        if (dropdownFont)
+            PushFont(dropdownFont);
+
+        if (BeginPopup("##LangPopup", ImGuiWindowFlags_NoMove)) {
+            if (!::IsWindowFocused())
+                CloseCurrentPopup();
+            PushStyleVar(ImGuiStyleVar_Alpha, anim);
+            for (const auto& lang : langs) {
+                bool isSelected = (lang.id == currentLangId);
+                bool useVietFont = (lang.id == "vietnamese") && (vietItemFont != nullptr);
+                if (useVietFont) {
+                    if (dropdownFont)
+                        PopFont();
+                    PushFont(vietItemFont);
+                }
+                if (Selectable(lang.displayName.c_str(), isSelected, 0, ImVec2(popupWidth, 0))) {
+                    Locale::SetLanguage(lang.id);
+                    RequestFontRebuild();
+                    CloseCurrentPopup();
+                }
+                if (isSelected)
+                    SetItemDefaultFocus();
+                if (useVietFont) {
+                    PopFont();
+                    if (dropdownFont)
+                        PushFont(dropdownFont);
+                }
+            }
+            PopStyleVar();
+            EndPopup();
+        }
+
+        if (dropdownFont)
+            PopFont();
+
+        PopStyleVar(3);
+        PopStyleColor(4);
+
         SetCursorPos({ viewport->Size.x - closeButtonDimensions.x, 0 });
 
         PushStyleVar(ImGuiStyleVar_ChildRounding, 0);
@@ -112,7 +211,11 @@ bool RenderTitleBarComponent(std::shared_ptr<RouterNav> router)
 
         if (IsItemClicked(ImGuiMouseButton_Left) && !IsWorkerBusy()) {
             JoinWorker();
+#ifdef _WIN32
             std::exit(0);
+#else
+            _exit(0);
+#endif
         }
 
         if (isCloseButtonHovered) {
@@ -127,77 +230,6 @@ bool RenderTitleBarComponent(std::shared_ptr<RouterNav> router)
     return IsItemHovered() || (IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem) && IsMouseDown(ImGuiMouseButton_Left));
 }
 
-/**
- * Render the language selector dropdown in the main window scope (below the
- * WndProc drag zone, top-right of the content area).  Must be called from
- * the root Begin/End block, NOT from inside a BeginChild.
- */
 void RenderLanguageSelector(float xPos)
 {
-    ImGuiViewport* viewport = GetMainViewport();
-
-    const auto&        langs         = Locale::GetAvailableLanguages();
-    const std::string& currentLangId = Locale::GetCurrentLanguageId();
-
-    std::string previewValue;
-    for (const auto& lang : langs) {
-        if (lang.id == currentLangId) { previewValue = lang.displayName; break; }
-    }
-    if (previewValue.empty()) previewValue = currentLangId;
-
-    const float langSelectorWidth = ScaleX(170);
-    // ScaleY(105): safely below the WndProc drag zone (ScaleY(100)), top-right of content
-    // Right edge aligned with the right edge of the option cards (ScaleX(35))
-    SetCursorPos({ xPos + viewport->Size.x - langSelectorWidth - ScaleX(35), ScaleY(105) });
-
-    PushStyleColor(ImGuiCol_FrameBg,        ImVec4(0.13f, 0.14f, 0.15f, 1.0f));
-    PushStyleColor(ImGuiCol_FrameBgHovered,  ImVec4(0.19f, 0.20f, 0.21f, 1.0f));
-    PushStyleColor(ImGuiCol_FrameBgActive,   ImVec4(0.16f, 0.17f, 0.18f, 1.0f));
-    PushStyleColor(ImGuiCol_PopupBg,         ImVec4(0.10f, 0.10f, 0.11f, 1.0f));
-    PushStyleColor(ImGuiCol_Header,          ImVec4(0.20f, 0.21f, 0.22f, 1.0f));
-    PushStyleColor(ImGuiCol_HeaderHovered,   ImVec4(0.26f, 0.27f, 0.28f, 1.0f));
-    PushStyleColor(ImGuiCol_Border,          ImVec4(0.22f, 0.23f, 0.25f, 1.0f));
-    PushStyleVar(ImGuiStyleVar_FrameRounding, ScaleX(4));
-    PushStyleVar(ImGuiStyleVar_FramePadding,  ImVec2(ScaleX(8), ScaleY(7)));
-    PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(ScaleX(8), 0));
-
-    // Fonts[2] = VietName_Standalone: pushed for the Vietnamese item only.
-    // Fonts[3] = Geist+CJK+VietPreview: present only when Vietnamese is active;
-    //            pushed around the entire combo so it looks the same as English mode.
-    ImGuiIO& io = GetIO();
-    ImFont* vietItemFont = (io.Fonts->Fonts.Size > 2) ? io.Fonts->Fonts[2] : nullptr;
-    ImFont* dropdownFont = (io.Fonts->Fonts.Size > 3) ? io.Fonts->Fonts[3] : nullptr;
-
-    if (dropdownFont) PushFont(dropdownFont);
-
-    SetNextItemWidth(langSelectorWidth);
-    if (BeginCombo("##LangSelector", previewValue.c_str())) {
-        for (const auto& lang : langs) {
-            bool isSelected = (lang.id == currentLangId);
-            bool useVietFont = (lang.id == "vietnamese") && (vietItemFont != nullptr);
-            if (useVietFont) {
-                if (dropdownFont) PopFont();
-                PushFont(vietItemFont);
-            }
-            if (Selectable(lang.displayName.c_str(), isSelected)) {
-                Locale::SetLanguage(lang.id);
-                RequestFontRebuild();
-            }
-            if (isSelected)
-                SetItemDefaultFocus();
-            if (useVietFont) {
-                PopFont();
-                if (dropdownFont) PushFont(dropdownFont);
-            }
-        }
-        EndCombo();
-    }
-
-    if (dropdownFont) PopFont();
-
-    if (IsItemHovered())
-        SetMouseCursor(ImGuiMouseCursor_Hand);
-
-    PopStyleVar(3);
-    PopStyleColor(7);
 }
