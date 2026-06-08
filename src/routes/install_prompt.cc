@@ -39,6 +39,7 @@
 #include <iostream>
 #include <dpi.h>
 #include <components.h>
+#include <i18n.h>
 #include <nlohmann/json.hpp>
 #include <http.h>
 #include <util.h>
@@ -248,7 +249,7 @@ const void RenderInstallPrompt(std::shared_ptr<RouterNav> router, float xPos)
     BeginChild("##PromptContainer", ImVec2(PromptContainerWidth, PromptContainerHeight), false);
     {
         PushFont(io.Fonts->Fonts[1]);
-        Text("%s", std::format("Install Millennium 💫").c_str());
+        Text("%s", Locale::Get("installTitle"));
         PopFont();
 
         Spacing();
@@ -256,7 +257,7 @@ const void RenderInstallPrompt(std::shared_ptr<RouterNav> router, float xPos)
         // TextWrapped(std::format("Released {} • ", ToTimeAgo(releaseInfo["published_at"].get<std::string>())).c_str());
         // SameLine(0, ScaleX(5));
         // TextColored(ImVec4(0.408f, 0.525f, 0.91f, 1.0f), "view release notes");
-        Text("An open source gateway to a better Steam® client experience.");
+        Text("%s", Locale::Get("installSubtitle"));
 
         if (IsItemHovered()) {
             SetMouseCursor(ImGuiMouseCursor_Hand);
@@ -275,7 +276,7 @@ const void RenderInstallPrompt(std::shared_ptr<RouterNav> router, float xPos)
         Spacing();
         Spacing();
 
-        Text("Steam Install Path:");
+        Text("%s", Locale::Get("installSteamPath"));
         Spacing();
         Spacing();
         PopStyleColor();
@@ -315,7 +316,7 @@ const void RenderInstallPrompt(std::shared_ptr<RouterNav> router, float xPos)
             PushStyleVar(ImGuiStyleVar_Alpha, currentColor);
             PushStyleColor(ImGuiCol_PopupBg, ImVec4(0.098f, 0.102f, 0.11f, 1.0f));
             BeginTooltip();
-            Text("Select Steam installation path");
+            Text("%s", Locale::Get("installSelectPath"));
             EndTooltip();
             PopStyleVar(3);
             PopStyleColor();
@@ -330,10 +331,10 @@ const void RenderInstallPrompt(std::shared_ptr<RouterNav> router, float xPos)
         PushStyleColor(ImGuiCol_Text, ImVec4(0.422f, 0.425f, 0.441f, 1.0f));
 
         std::string currentTag = selectedRelease.contains("tag_name") ? selectedRelease["tag_name"].get<std::string>() : std::string("(none)");
-        Text("Installing Millennium version %s", currentTag.c_str());
+        Text(Locale::Get("installVersion"), currentTag.c_str());
         SameLine(0, ScaleX(5));
 
-        const char* changeText = "change version ▾";
+        const char* changeText = Locale::Get("installChangeVersion");
         ImVec2 changeSize = CalcTextSize(changeText);
         if (changeSize.y < GetTextLineHeight())
             changeSize.y = GetTextLineHeight();
@@ -371,7 +372,7 @@ const void RenderInstallPrompt(std::shared_ptr<RouterNav> router, float xPos)
 
                     if (latestReleaseTag == tag) {
                         PushStyleColor(ImGuiCol_Text, ImVec4(0.408f, 0.525f, 0.91f, 1.0f));
-                        strTag += " (latest)";
+                        strTag += Locale::Get("installLatest");
                     }
 
                     if (Selectable(std::format("  {}  ", strTag).c_str(), is_selected)) {
@@ -403,12 +404,12 @@ const void RenderInstallPrompt(std::shared_ptr<RouterNav> router, float xPos)
         PushStyleColor(ImGuiCol_Text, ImVec4(0.422f, 0.425f, 0.441f, 1.0f));
 
         if (installSizeStr.empty()) {
-            Text("•   Install size: N/A");
+            Text("%s", Locale::Get("installSizeNA"));
         } else {
-            Text("•   Install size: %.2f MB", stof(installSizeStr) / (1024.0f * 1024.0f));
+            Text(Locale::Get("installSizeMB"), stof(installSizeStr) / (1024.0f * 1024.0f));
         }
 
-        Text("•   Download size: %.2f MB", osReleaseInfo.contains("size") ? osReleaseInfo["size"].get<float>() / (1024.0f * 1024.0f) : 0.0f);
+        Text(Locale::Get("installDownloadMB"), osReleaseInfo.contains("size") ? osReleaseInfo["size"].get<float>() / (1024.0f * 1024.0f) : 0.0f);
 
         PopStyleColor();
     }
@@ -423,7 +424,7 @@ const void RenderInstallPrompt(std::shared_ptr<RouterNav> router, float xPos)
         PushStyleColor(ImGuiCol_Button, ImVec4(currentColor, currentColor, currentColor, 1.0f));
         PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(currentColor, currentColor, currentColor, 1.0f));
 
-        if (Button("Install", ImVec2(xPos + GetContentRegionAvail().x, GetContentRegionAvail().y))) {
+        if (Button(Locale::Get("installButton"), ImVec2(xPos + GetContentRegionAvail().x, GetContentRegionAvail().y))) {
             auto path = steamPath;
             auto release = selectedRelease;
             auto osRelease = osReleaseInfo;

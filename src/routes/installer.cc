@@ -39,6 +39,7 @@
 #include <imspinner.h>
 #include <dpi.h>
 #include <worker.h>
+#include <i18n.h>
 #include <util.h>
 #include <nlohmann/json.hpp>
 #include <http.h>
@@ -175,7 +176,7 @@ static bool VerifyDownloadSignature(const std::string&, const std::string&) { re
 TaskScheduler::TaskResult DownloadReleaseAssets(std::unique_ptr<double>& progress, const nlohmann::json& releaseInfo, const nlohmann::json& osReleaseInfo)
 {
     /** Update the progress text */
-    statusText = "Downloading Millennium...";
+    statusText = Locale::Get("installerDownloading");
 
     const auto fileSize = osReleaseInfo["size"].get<double>();
     const auto downloadUrl = osReleaseInfo["browser_download_url"].get<std::string>();
@@ -200,7 +201,7 @@ TaskScheduler::TaskResult InstallReleaseAssets(std::unique_ptr<double>& progress
                                                const std::string& steamPath)
 {
     /** Update the progress text */
-    statusText = "Installing Millennium...";
+    statusText = Locale::Get("installerInstalling");
 
     const auto fileName = std::filesystem::temp_directory_path() / osReleaseInfo["name"].get<std::string>();
     double currentFileProgress = 0.0;
@@ -247,8 +248,8 @@ void RenderFailed(float xPos, const std::string& reason)
     ImGuiIO& io = GetIO();
     ImGuiViewport* viewport = GetMainViewport();
 
-    const char* text = "Failed to install Millennium 😢";
-    const char* subDescription = "View Troubleshooting Guide ↗";
+    const char* text = Locale::Get("installerFailTitle");
+    const char* subDescription = Locale::Get("installerTroubleshoot");
 
     PushFont(io.Fonts->Fonts[1]);
     SetCursorPos({ xPos + (viewport->Size.x) / 2 - (CalcTextSize(text).x / 2), viewport->Size.y / 2 - ScaleY(55) });
@@ -321,9 +322,9 @@ const void RenderInstaller(std::shared_ptr<RouterNav> router, float xPos)
             SetCursorPos({ xPos + (viewport->Size.x) / 2 - (CalcTextSize(statusText.c_str()).x / 2), viewport->Size.y / 2 + ScaleY(15) });
             Text("%s", statusText.c_str());
         } else {
-            const char* text = "You're all set! Thanks for using Millennium 💖";
-            const char* description = "If you're new here, see further instructions when Steam® starts.";
-            const char* subDescription = "View Documentation ↗";
+            const char* text = Locale::Get("installerSuccessTitle");
+            const char* description = Locale::Get("installerSuccessDesc");
+            const char* subDescription = Locale::Get("installerDocs");
 
             PushFont(io.Fonts->Fonts[1]);
             SetCursorPos({ xPos + (viewport->Size.x) / 2 - (CalcTextSize(text).x / 2), viewport->Size.y / 2 - ScaleY(55) });
@@ -411,10 +412,10 @@ const void RenderInstaller(std::shared_ptr<RouterNav> router, float xPos)
         const float cursorPosSave = GetCursorPosX();
 
         SetCursorPosY(GetCursorPosY() - ScaleY(12));
-        TextColored(ImVec4(0.322f, 0.325f, 0.341f, 1.0f), "Steam Homebrew & Millennium are not affiliated with");
+        TextColored(ImVec4(0.322f, 0.325f, 0.341f, 1.0f), "%s", Locale::Get("installerDisclaimer1"));
 
         SetCursorPos({ cursorPosSave, GetCursorPosY() - ScaleY(20) });
-        TextColored(ImVec4(0.322f, 0.325f, 0.341f, 1.0f), "Steam®, Valve, or any of their partners.");
+        TextColored(ImVec4(0.322f, 0.325f, 0.341f, 1.0f), "%s", Locale::Get("installerDisclaimer2"));
 
         SameLine(0);
         SetCursorPosY(GetCursorPosY() - ScaleY(25));
@@ -432,7 +433,7 @@ const void RenderInstaller(std::shared_ptr<RouterNav> router, float xPos)
 
         SetCursorPosX(xPos + GetCursorPosX() + GetContentRegionAvail().x - ButtonWidth);
 
-        if (Button("Finish", { xPos + GetContentRegionAvail().x, GetContentRegionAvail().y })) {
+        if (Button(Locale::Get("installerFinish"), { xPos + GetContentRegionAvail().x, GetContentRegionAvail().y })) {
             StartSteamFromPath(g_steamPath);
         }
 

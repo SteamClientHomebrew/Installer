@@ -35,6 +35,7 @@
 #include <nlohmann/json.hpp>
 
 bool RenderTitleBarComponent(std::shared_ptr<RouterNav> router);
+void RenderLanguageSelector(float xPos);
 const void RenderHome(std::shared_ptr<RouterNav> router, float xPos);
 const void RenderInstallPrompt(std::shared_ptr<RouterNav> router, float xPos);
 const void RenderInstaller(std::shared_ptr<RouterNav> router, float xPos);
