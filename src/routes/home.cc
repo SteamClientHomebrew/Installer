@@ -38,6 +38,7 @@
 #include <dpi.h>
 #include <unordered_map>
 #include <components.h>
+#include <i18n.h>
 #include <atomic>
 #include <imspinner.h>
 #include <worker.h>
@@ -54,6 +55,7 @@ enum OptionType
 
 struct OptionProps
 {
+    std::string id;           // stable key used for ImGui IDs and animation state
     std::string title;
     std::string description;
     OptionType type;
@@ -74,14 +76,14 @@ const void RenderOption(OptionProps props, int ContainerWidth, int ContainerHeig
     ImGuiIO& io = GetIO();
     const float DEFAULT_BORDER_COL = GetStyleColorVec4(ImGuiCol_Border).x;
 
-    auto& state = optionStates[props.title];
+    auto& state = optionStates[props.id];
     state.initPos = GetCursorPosY();
 
     static const float hoverColor = 0.22f;
     static const float selectedColor = 1.0f;
 
-    float currentColor = SmoothFloat(props.title, state.initPos, state.isHovered, 5, 0.15f, std::make_tuple(DEFAULT_BORDER_COL, hoverColor));
-    float currentClickedColor = EaseInOutFloat(props.title, hoverColor, selectedColor, state.isSelected, 0.3f);
+    float currentColor = SmoothFloat(props.id, state.initPos, state.isHovered, 5, 0.15f, std::make_tuple(DEFAULT_BORDER_COL, hoverColor));
+    float currentClickedColor = EaseInOutFloat(props.id, hoverColor, selectedColor, state.isSelected, 0.3f);
 
     if (state.isHovered && currentClickedColor == hoverColor) {
         PushStyleColor(ImGuiCol_Border, ImVec4(currentColor, currentColor, currentColor, 1.0f));
@@ -89,7 +91,7 @@ const void RenderOption(OptionProps props, int ContainerWidth, int ContainerHeig
         PushStyleColor(ImGuiCol_Border, ImVec4(currentClickedColor, currentClickedColor, currentClickedColor, 1.f));
     }
 
-    BeginChild(("##" + props.title + "Container").c_str(), ImVec2(ContainerWidth, ContainerHeight), true, ImGuiWindowFlags_NoScrollbar);
+    BeginChild(("##" + props.id + "Container").c_str(), ImVec2(ContainerWidth, ContainerHeight), true, ImGuiWindowFlags_NoScrollbar);
     {
         PushFont(io.Fonts->Fonts[1]);
         Text("%s", props.title.c_str());
@@ -118,7 +120,7 @@ const void RenderOption(OptionProps props, int ContainerWidth, int ContainerHeig
         /** Unselect other options */
         if (state.isSelected) {
             for (auto& [key, value] : optionStates) {
-                if (key != props.title) {
+                if (key != props.id) {
                     value.isSelected = false;
                 }
             }
@@ -175,8 +177,8 @@ const void RenderHome(std::shared_ptr<RouterNav> router, float xPos)
 
     SetCursorPos({ xPos + (viewport->Size.x - ((ContainerWidth * 2) + ContainerSpacing)) / 2, ((viewport->Size.y - BottomNavBarHeight) / 2.0f) - ContainerHeight / 2.0f });
 
-    RenderOption({ "Install", "Integrate Millennium into your Steam® Client.", INSTALL }, ContainerWidth, ContainerHeight, ContainerSpacing);
-    RenderOption({ "Remove", "Selectively uninstall portions of Millennium.", REMOVE }, ContainerWidth, ContainerHeight, ContainerSpacing);
+    RenderOption({ "install", Locale::Get("homeInstall"), Locale::Get("homeInstallDesc"), INSTALL }, ContainerWidth, ContainerHeight, ContainerSpacing);
+    RenderOption({ "remove", Locale::Get("homeRemove"), Locale::Get("homeRemoveDesc"), REMOVE }, ContainerWidth, ContainerHeight, ContainerSpacing);
 
     PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.078f, 0.082f, 0.09f, 1.0f));
 
@@ -226,7 +228,7 @@ const void RenderHome(std::shared_ptr<RouterNav> router, float xPos)
             EndChild();
             PopStyleColor();
             PopStyleVar();
-        } else if (Button("Next", { xPos + GetContentRegionAvail().x, GetContentRegionAvail().y })) {
+        } else if (Button(Locale::Get("homeNext"), { xPos + GetContentRegionAvail().x, GetContentRegionAvail().y })) {
             switch (currentOption) {
                 case INSTALL:
                 {
@@ -280,7 +282,7 @@ const void RenderHome(std::shared_ptr<RouterNav> router, float xPos)
             }
         }
 
-        const char* toolTipText = "Select an option above to continue.";
+        const char* toolTipText = Locale::Get("homeSelectOption");
         const float tooltipWidth = CalcTextSize(toolTipText).x + ScaleX(20);
 
         float toolTipOpacity = EaseInOutFloat("##SelectAnOptionTooltip", 0.f, 1.f, buttonHovered && currentOption == UNSET, 0.4f);

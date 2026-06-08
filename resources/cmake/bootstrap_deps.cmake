@@ -101,7 +101,11 @@ FetchContent_Declare(imspinner URL "file://${THIRDPARTY_DIR}/imspinner-b50e1c8.t
 # ============================================================================
 # Build independent dependencies
 # ============================================================================
-set(INDEPENDENT_DEPS zlib glfw glew nlohmann_json mini)
+if(WIN32)
+    set(INDEPENDENT_DEPS zlib glfw glew nlohmann_json mini)
+else()
+    set(INDEPENDENT_DEPS zlib glfw nlohmann_json mini)
+endif()
 
 foreach(dep ${INDEPENDENT_DEPS})
     string(TIMESTAMP start_time "%s")
@@ -112,7 +116,7 @@ foreach(dep ${INDEPENDENT_DEPS})
 endforeach()
 
 # Fix non-ASCII copyright symbol in GLEW .rc that breaks llvm-rc on CI
-if(EXISTS "${glew_SOURCE_DIR}/build/glew.rc")
+if(WIN32 AND EXISTS "${glew_SOURCE_DIR}/build/glew.rc")
     file(WRITE "${glew_SOURCE_DIR}/build/glew.rc" "// intentionally blank\n")
 endif()
 

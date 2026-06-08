@@ -33,8 +33,10 @@
 #include <dpi.h>
 #include <texture.hh>
 #include <animate.h>
+#include <i18n.h>
 #ifdef _WIN32
 #endif
+#include <format>
 #include <util.h>
 
 using namespace ImGui;
@@ -66,10 +68,10 @@ const void RenderBottomNavBar(const char* identifier, float xPos, std::function<
         const float cursorPosSave = GetCursorPosX();
 
         SetCursorPosY(GetCursorPosY() - ScaleX(12));
-        TextColored(ImVec4(0.322f, 0.325f, 0.341f, 1.0f), "Steam Homebrew & Millennium are not affiliated with");
+        TextColored(ImVec4(0.322f, 0.325f, 0.341f, 1.0f), "%s", Locale::Get("installerDisclaimer1"));
 
         SetCursorPos({ cursorPosSave, GetCursorPosY() - ScaleY(20) });
-        TextColored(ImVec4(0.322f, 0.325f, 0.341f, 1.0f), "Steam®, Valve, or any of their partners.");
+        TextColored(ImVec4(0.322f, 0.325f, 0.341f, 1.0f), "%s", Locale::Get("installerDisclaimer2"));
 
         SameLine(0);
         SetCursorPosY(GetCursorPosY() - ScaleY(25));
@@ -95,7 +97,7 @@ const void RenderBottomNavBar(const char* identifier, float xPos, std::function<
             PushStyleVar(ImGuiStyleVar_WindowRounding, 6);
             PushStyleVar(ImGuiStyleVar_Alpha, discordIconHoverTransparency);
             PushStyleColor(ImGuiCol_PopupBg, ImVec4(0.098f, 0.102f, 0.11f, 1.0f));
-            SetTooltip("Join Discord Server");
+            SetTooltip("%s", Locale::Get("tooltipDiscord"));
 
             if (IsItemClicked()) {
                 OpenUrl(discordInviteLink);
@@ -126,7 +128,7 @@ const void RenderBottomNavBar(const char* identifier, float xPos, std::function<
             PushStyleVar(ImGuiStyleVar_WindowRounding, 6);
             PushStyleVar(ImGuiStyleVar_Alpha, githubIconHoverTransparency);
             PushStyleColor(ImGuiCol_PopupBg, ImVec4(0.098f, 0.102f, 0.11f, 1.0f));
-            SetTooltip("View Source Code");
+            SetTooltip("%s", Locale::Get("tooltipGithub"));
 
             if (IsItemClicked()) {
                 OpenUrl(githubRepositoryUrl);

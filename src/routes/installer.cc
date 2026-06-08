@@ -39,14 +39,17 @@
 #include <imspinner.h>
 #include <dpi.h>
 #include <worker.h>
+#include <i18n.h>
 #include <util.h>
 #include <nlohmann/json.hpp>
 #include <http.h>
 #include <task_scheduler.h>
 #include <unzip.h>
 #include <atomic>
+#ifdef _WIN32
 #include <windows.h>
 #include <tlhelp32.h>
+#endif
 
 using namespace ImGui;
 using namespace ImSpinner;
@@ -81,6 +84,7 @@ void UpdateProgressEasing()
     }
 }
 
+#ifdef _WIN32
 std::vector<BYTE> HexStringToBytes(const std::string& hex)
 {
     std::vector<BYTE> bytes;
@@ -165,11 +169,48 @@ cleanup:
 
     return success;
 }
+#else
+#include <openssl/evp.h>
+#include <cstdio>
+
+static bool VerifyDownloadSignature(const std::string& filePath, const std::string& expectedHex)
+{
+    FILE* f = fopen(filePath.c_str(), "rb");
+    if (!f) return false;
+
+    EVP_MD_CTX* ctx = EVP_MD_CTX_new();
+    if (!ctx) { fclose(f); return false; }
+
+    bool success = false;
+    if (EVP_DigestInit_ex(ctx, EVP_sha256(), nullptr)) {
+        unsigned char buf[65536];
+        size_t n;
+        bool ok = true;
+        while ((n = fread(buf, 1, sizeof(buf), f)) > 0) {
+            if (!EVP_DigestUpdate(ctx, buf, n)) { ok = false; break; }
+        }
+        if (ok && !ferror(f)) {
+            unsigned char hash[EVP_MAX_MD_SIZE];
+            unsigned int hashLen = 0;
+            if (EVP_DigestFinal_ex(ctx, hash, &hashLen)) {
+                char hexStr[65] = {};
+                for (unsigned int i = 0; i < hashLen; i++)
+                    snprintf(hexStr + i * 2, 3, "%02x", hash[i]);
+                success = (expectedHex == hexStr);
+            }
+        }
+    }
+
+    EVP_MD_CTX_free(ctx);
+    fclose(f);
+    return success;
+}
+#endif
 
 TaskScheduler::TaskResult DownloadReleaseAssets(std::unique_ptr<double>& progress, const nlohmann::json& releaseInfo, const nlohmann::json& osReleaseInfo)
 {
     /** Update the progress text */
-    statusText = "Downloading Millennium...";
+    statusText = Locale::Get("installerDownloading");
 
     const auto fileSize = osReleaseInfo["size"].get<double>();
     const auto downloadUrl = osReleaseInfo["browser_download_url"].get<std::string>();
@@ -194,7 +235,7 @@ TaskScheduler::TaskResult InstallReleaseAssets(std::unique_ptr<double>& progress
                                                const std::string& steamPath)
 {
     /** Update the progress text */
-    statusText = "Installing Millennium...";
+    statusText = Locale::Get("installerInstalling");
 
     const auto fileName = std::filesystem::temp_directory_path() / osReleaseInfo["name"].get<std::string>();
     double currentFileProgress = 0.0;
@@ -241,8 +282,8 @@ void RenderFailed(float xPos, const std::string& reason)
     ImGuiIO& io = GetIO();
     ImGuiViewport* viewport = GetMainViewport();
 
-    const char* text = "Failed to install Millennium 😢";
-    const char* subDescription = "View Troubleshooting Guide ↗";
+    const char* text = Locale::Get("installerFailTitle");
+    const char* subDescription = Locale::Get("installerTroubleshoot");
 
     PushFont(io.Fonts->Fonts[1]);
     SetCursorPos({ xPos + (viewport->Size.x) / 2 - (CalcTextSize(text).x / 2), viewport->Size.y / 2 - ScaleY(55) });
@@ -315,9 +356,9 @@ const void RenderInstaller(std::shared_ptr<RouterNav> router, float xPos)
             SetCursorPos({ xPos + (viewport->Size.x) / 2 - (CalcTextSize(statusText.c_str()).x / 2), viewport->Size.y / 2 + ScaleY(15) });
             Text("%s", statusText.c_str());
         } else {
-            const char* text = "You're all set! Thanks for using Millennium 💖";
-            const char* description = "If you're new here, see further instructions when Steam® starts.";
-            const char* subDescription = "View Documentation ↗";
+            const char* text = Locale::Get("installerSuccessTitle");
+            const char* description = Locale::Get("installerSuccessDesc");
+            const char* subDescription = Locale::Get("installerDocs");
 
             PushFont(io.Fonts->Fonts[1]);
             SetCursorPos({ xPos + (viewport->Size.x) / 2 - (CalcTextSize(text).x / 2), viewport->Size.y / 2 - ScaleY(55) });
@@ -405,10 +446,10 @@ const void RenderInstaller(std::shared_ptr<RouterNav> router, float xPos)
         const float cursorPosSave = GetCursorPosX();
 
         SetCursorPosY(GetCursorPosY() - ScaleY(12));
-        TextColored(ImVec4(0.322f, 0.325f, 0.341f, 1.0f), "Steam Homebrew & Millennium are not affiliated with");
+        TextColored(ImVec4(0.322f, 0.325f, 0.341f, 1.0f), "%s", Locale::Get("installerDisclaimer1"));
 
         SetCursorPos({ cursorPosSave, GetCursorPosY() - ScaleY(20) });
-        TextColored(ImVec4(0.322f, 0.325f, 0.341f, 1.0f), "Steam®, Valve, or any of their partners.");
+        TextColored(ImVec4(0.322f, 0.325f, 0.341f, 1.0f), "%s", Locale::Get("installerDisclaimer2"));
 
         SameLine(0);
         SetCursorPosY(GetCursorPosY() - ScaleY(25));
@@ -426,7 +467,7 @@ const void RenderInstaller(std::shared_ptr<RouterNav> router, float xPos)
 
         SetCursorPosX(xPos + GetCursorPosX() + GetContentRegionAvail().x - ButtonWidth);
 
-        if (Button("Finish", { xPos + GetContentRegionAvail().x, GetContentRegionAvail().y })) {
+        if (Button(Locale::Get("installerFinish"), { xPos + GetContentRegionAvail().x, GetContentRegionAvail().y })) {
             StartSteamFromPath(g_steamPath);
         }
 

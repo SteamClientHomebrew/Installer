@@ -2,6 +2,11 @@ name: Build Millennium
 
 on:
   workflow_dispatch:
+    inputs:
+      skip_release:
+        description: 'Build artifacts without creating a GitHub release or signing'
+        type: boolean
+        default: false
   push:
     branches:
       - main
@@ -72,6 +77,7 @@ jobs:
 
       - name: Sign Installer Build
         id: sign_artifact
+        if: ${{ !inputs.skip_release }}
         uses: signpath/github-action-submit-signing-request@v1.1
         with:
           api-token: "${{ secrets.SIGNPATH_API_TOKEN }}"
@@ -85,6 +91,7 @@ jobs:
 
       - name: Upload Signed Build Release
         id: upload-signed-artifact
+        if: ${{ !inputs.skip_release }}
         uses: actions/upload-artifact@v4
         with:
           include-hidden-files: true
@@ -102,6 +109,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create GitHub Release
+        if: ${{ !inputs.skip_release }}
         run: cd resources/versioning && npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
