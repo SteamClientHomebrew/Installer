@@ -1,9 +1,15 @@
-<div align="center" max-width="100px">
+# Installer
 
-A simple standalone program which automates the installation, removal and maintenance of Millennium.
+[Home Page](https://steambrew.app/) • [Discord](https://steambrew.app/discord) • [Documentation](https://docs.steambrew.app/)
 
-&nbsp;
- 
-<img align="center" width="80%" src="https://github.com/user-attachments/assets/64ee602f-ea89-4640-affe-f762bae77361">
+A open source, dependency free program that automates the installation, removal and maintenance of Millennium.
 
-</div>
+`Windows` `Linux` 
+
+![Millennium Installer Preview](https://github.com/user-attachments/assets/64ee602f-ea89-4640-affe-f762bae77361)
+
+## Installation[^1]
+
+Installing Millennium is only a few steps. See [here](https://docs.steambrew.app/users/getting-started/installation) for a more detailed guide.
+
+[^1]: Installing and using Millennium
