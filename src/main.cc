@@ -41,6 +41,7 @@
 #include <thread>
 #include "updater.h"
 
+#ifdef _WIN32
 void AllocateDeveloperConsoleIfNeeded()
 {
     if (!IsDebuggerPresent()) {
@@ -55,6 +56,7 @@ void AllocateDeveloperConsoleIfNeeded()
     freopen_s(&file, "CONOUT$", "w", stdout);
     freopen_s(&file, "CONOUT$", "w", stderr);
 }
+#endif
 
 int RunInstallerWindow(GLFWwindow* window)
 {
@@ -102,7 +104,11 @@ GLFWwindow* CreateWindowContext(GLFWmonitor* monitor)
 
     const GLFWvidmode* vidMode = glfwGetVideoMode(monitor);
     if (!vidMode) {
+#ifdef _WIN32
         MessageBoxA(NULL, "Failed to get video mode", "Error", MB_ICONERROR);
+#else
+        std::cerr << "Failed to get video mode" << std::endl;
+#endif
         glfwDestroyWindow(window);
         glfwTerminate();
         return 0;
@@ -119,26 +125,40 @@ GLFWwindow* CreateWindowContext(GLFWmonitor* monitor)
     return window;
 }
 
+#ifdef _WIN32
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
     AllocateDeveloperConsoleIfNeeded();
     CheckForAndDownloadUpdates();
 
     MMRESULT result = timeBeginPeriod(1);
-    /* not fatal, just worse performance in the app */
     if (result != TIMERR_NOERROR) {
         std::cerr << "Failed to set timer resolution to 1 ms" << std::endl;
     }
-
+#else
+int main(int argc, char* argv[])
+{
+#endif
+#if defined(__linux__)
+    glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_X11);
+#endif
     glfwSetErrorCallback(GLFWErrorCallback);
     if (!glfwInit()) {
+#ifdef _WIN32
         MessageBoxA(NULL, "Failed to initialize GLFW", "Error", MB_ICONERROR);
+#else
+        std::cerr << "Failed to initialize GLFW" << std::endl;
+#endif
         return 1;
     }
 
     GLFWmonitor* monitor = glfwGetPrimaryMonitor();
     if (!monitor) {
+#ifdef _WIN32
         MessageBoxA(NULL, "Failed to get primary monitor", "Error", MB_ICONERROR);
+#else
+        std::cerr << "Failed to get primary monitor" << std::endl;
+#endif
         glfwTerminate();
         return 1;
     }

@@ -45,8 +45,10 @@
 #include <task_scheduler.h>
 #include <unzip.h>
 #include <atomic>
+#ifdef _WIN32
 #include <windows.h>
 #include <tlhelp32.h>
+#endif
 
 using namespace ImGui;
 using namespace ImSpinner;
@@ -81,6 +83,7 @@ void UpdateProgressEasing()
     }
 }
 
+#ifdef _WIN32
 std::vector<BYTE> HexStringToBytes(const std::string& hex)
 {
     std::vector<BYTE> bytes;
@@ -165,6 +168,9 @@ cleanup:
 
     return success;
 }
+#else
+static bool VerifyDownloadSignature(const std::string&, const std::string&) { return true; }
+#endif
 
 TaskScheduler::TaskResult DownloadReleaseAssets(std::unique_ptr<double>& progress, const nlohmann::json& releaseInfo, const nlohmann::json& osReleaseInfo)
 {

@@ -33,37 +33,30 @@
 #include <http.h>
 #include <nlohmann/json.hpp>
 #include <semver.h>
-#include <windows.h>
 #include <iostream>
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 namespace fs = std::filesystem;
 
-/**
- * Strip leading 'v' or 'V' from version string for semver comparison
- */
-static std::string NormalizeVersion(const std::string& version)
-{
-    if (!version.empty() && (version[0] == 'v' || version[0] == 'V')) {
-        return version.substr(1);
-    }
-    return version;
-}
-
-/**
- * Get the path of the current executable
- */
-static fs::path GetCurrentExecutablePath()
-{
-    wchar_t path[MAX_PATH];
-    GetModuleFileNameW(NULL, path, MAX_PATH);
-    return fs::path(path);
-}
-
-/**
- * Check for updates from GitHub and perform self-update if available
- */
 void CheckForAndDownloadUpdates()
 {
+#ifndef _WIN32
+    return; // self-update not implemented on Linux
+#else
+    auto NormalizeVersion = [](const std::string& version) -> std::string {
+        if (!version.empty() && (version[0] == 'v' || version[0] == 'V'))
+            return version.substr(1);
+        return version;
+    };
+
+    auto GetCurrentExecutablePath = []() -> fs::path {
+        wchar_t path[MAX_PATH];
+        GetModuleFileNameW(NULL, path, MAX_PATH);
+        return fs::path(path);
+    };
+
     const std::string currentVersion = MILLENNIUM_VERSION;
     const std::string apiUrl = "https://api.github.com/repos/SteamClientHomebrew/Installer/releases";
 
@@ -193,4 +186,5 @@ void CheckForAndDownloadUpdates()
             std::cerr << "Failed to restore old version: " << e.what() << std::endl;
         }
     }
+#endif // _WIN32
 }

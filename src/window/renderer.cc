@@ -45,7 +45,10 @@
 #include <atomic>
 #include <iostream>
 #include <format>
+#include <thread>
+#ifdef _WIN32
 #include <windows.h>
+#endif
 
 using namespace ImGui;
 
@@ -60,6 +63,7 @@ static GLFWwindow* g_Window = nullptr;
 
 void GLFWErrorCallback(int error, const char* description)
 {
+#ifdef _WIN32
     if (error == GLFW_API_UNAVAILABLE) {
         MessageBoxA(NULL,
             "Your system doesn't support hardware rendering, which is preventing the installer from displaying properly. "
@@ -71,8 +75,10 @@ void GLFWErrorCallback(int error, const char* description)
             "Error", MB_ICONERROR);
         return;
     }
-
     MessageBoxA(NULL, std::format("An error occurred.\n\nGLFW Error {}: {}", error, description).c_str(), "Whoops!", MB_ICONERROR);
+#else
+    std::cerr << std::format("GLFW Error {}: {}", error, description) << std::endl;
+#endif
 }
 
 void WindowRefreshCallback(GLFWwindow* window)
@@ -95,27 +101,31 @@ void SetupImGuiScaling(GLFWwindow* window)
     ImGuiStyle& style = GetStyle();
     float scaleFactor = XDPI;
 
-    constexpr static const auto fontPath = "C:/Windows/Fonts/seguiemj.ttf";
-    static ImFontConfig cfg;
-
-    cfg.MergeMode = true;
-    cfg.FontLoaderFlags |= ImGuiFreeTypeLoaderFlags_LoadColor;
-
     ImFontConfig mem_cfg;
     mem_cfg.FontDataOwnedByAtlas = false;
 
     io.Fonts->Clear();
     io.Fonts->AddFontFromMemoryTTF((void*)GeistVariable, sizeof(GeistVariable), 16.0f * scaleFactor, &mem_cfg);
+
+#ifdef _WIN32
+    constexpr static const auto fontPath = "C:/Windows/Fonts/seguiemj.ttf";
+    static ImFontConfig cfg;
+    cfg.MergeMode = true;
+    cfg.FontLoaderFlags |= ImGuiFreeTypeLoaderFlags_LoadColor;
+
     if (std::filesystem::exists(fontPath))
         io.Fonts->AddFontFromFileTTF(fontPath, 14.0f * scaleFactor, &cfg);
+#endif
 
     io.Fonts->AddFontFromMemoryTTF((void*)Geist_Bold, sizeof(Geist_Bold), 18.0f * scaleFactor, &mem_cfg);
+
+#ifdef _WIN32
     if (std::filesystem::exists(fontPath))
         io.Fonts->AddFontFromFileTTF(fontPath, 14.0f * scaleFactor, &cfg);
+#endif
 
     /** Explicitly set FreeType as the font loader to ensure color emoji support */
     io.Fonts->SetFontLoader(ImGuiFreeType::GetFontLoader());
-    io.Fonts->Build();
 
     io.DisplayFramebufferScale = ImVec2(scaleFactor, scaleFactor);
 
@@ -128,6 +138,9 @@ void SetupImGuiScaling(GLFWwindow* window)
 void SpawnRendererThread(GLFWwindow* window, const char* glsl_version, std::shared_ptr<RouterNav> router)
 {
     glfwMakeContextCurrent(window);
+#ifndef _WIN32
+    glewExperimental = GL_TRUE;
+#endif
     if (glewInit() != GLEW_OK) {
         std::cerr << "Failed to initialize GLEW\n";
         return;
@@ -161,7 +174,11 @@ void SpawnRendererThread(GLFWwindow* window, const char* glsl_version, std::shar
         double remainingTime = TARGET_FRAME_TIME - elapsedTime;
 
         if (remainingTime > 0) {
+#ifdef _WIN32
             Sleep((DWORD)(remainingTime * 1000));
+#else
+            std::this_thread::sleep_for(std::chrono::duration<double>(remainingTime));
+#endif
         }
     }
 }

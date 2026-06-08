@@ -97,14 +97,25 @@ include_directories(SYSTEM ${stb_SOURCE_DIR})
 include_directories(SYSTEM ${zlib_SOURCE_DIR} ${zlib_BINARY_DIR})
 
 target_link_libraries(${PROJECT_NAME} PRIVATE imgui_lib)
-target_link_options(${PROJECT_NAME} PRIVATE /FORCE:MULTIPLE)
+if(WIN32)
+    target_link_options(${PROJECT_NAME} PRIVATE /FORCE:MULTIPLE)
+elseif(UNIX)
+    target_link_options(${PROJECT_NAME} PRIVATE -Wl,--allow-multiple-definition)
+endif()
 
 if(UNIX AND NOT APPLE)
-    find_package(PkgConfig REQUIRED)
-    pkg_check_modules(GLFW REQUIRED glfw3)
-
-    target_compile_options(${PROJECT_NAME} PRIVATE ${GLFW_CFLAGS})
-    target_link_libraries(${PROJECT_NAME} PRIVATE ${GLFW_LDFLAGS} GL)
+    find_package(GLEW REQUIRED)
+    target_include_directories(${PROJECT_NAME}
+        SYSTEM PRIVATE ${minizip_ng_SOURCE_DIR}
+    )
+    target_link_libraries(${PROJECT_NAME} PRIVATE
+        freetype
+        glfw
+        GL
+        GLEW::GLEW
+        CURL::libcurl
+        minizip
+    )
 elseif(APPLE)
     find_library(COCOA_LIBRARY Cocoa REQUIRED)
     find_library(IOKIT_LIBRARY IOKit REQUIRED)

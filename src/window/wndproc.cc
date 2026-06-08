@@ -28,20 +28,23 @@
  * SOFTWARE.
  */
 
-#define GLFW_EXPOSE_NATIVE_WIN32
 #include <wndproc.h>
-#include <GLFW/glfw3native.h>
-#include <dwmapi.h>
 #include <renderer.h>
 #include <dpi.h>
 #include <util.h>
 #include <memory.h>
 #include <stb_image.h>
 
-WNDPROC g_OriginalWindProcCallback;
 bool isTitleBarHovered = false;
-GLFWwindow* window;
-std::shared_ptr<RouterNav> g_routerPtr;
+
+#ifdef _WIN32
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3native.h>
+#include <dwmapi.h>
+
+static WNDPROC g_OriginalWindProcCallback;
+static GLFWwindow* g_window;
+static std::shared_ptr<RouterNav> g_routerPtr;
 
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -91,13 +94,11 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 void SetBorderlessWindowStyle(GLFWwindow* window, std::shared_ptr<RouterNav> router)
 {
-    ::window = window;
-    ::g_routerPtr = router;
+    g_window = window;
+    g_routerPtr = router;
 
     HWND hWnd = glfwGetWin32Window(window);
 
-    // Extend frame into client area so DWM stops drawing the native caption bar.
-    // This is required on Windows 10 where WM_NCCALCSIZE alone isn't enough.
     MARGINS margins = { 0, 0, 0, 1 };
     DwmExtendFrameIntoClientArea(hWnd, &margins);
 
@@ -134,3 +135,24 @@ void SetWindowIcon(GLFWwindow* window)
     glfwSetWindowIcon(window, 1, &glfwIcon);
     stbi_image_free(data);
 }
+
+#else // !_WIN32
+
+void SetBorderlessWindowStyle(GLFWwindow*, std::shared_ptr<RouterNav>) {}
+
+void SetWindowIcon(GLFWwindow* window)
+{
+    int width, height, channels;
+    unsigned char* data = stbi_load_from_memory(windowIconLight, sizeof(windowIconLight), &width, &height, &channels, 4);
+    if (!data)
+        return;
+
+    GLFWimage glfwIcon;
+    glfwIcon.pixels = data;
+    glfwIcon.width = width;
+    glfwIcon.height = height;
+    glfwSetWindowIcon(window, 1, &glfwIcon);
+    stbi_image_free(data);
+}
+
+#endif // _WIN32

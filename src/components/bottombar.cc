@@ -33,8 +33,7 @@
 #include <dpi.h>
 #include <texture.hh>
 #include <animate.h>
-#ifdef _WIN32
-#endif
+#include <format>
 #include <util.h>
 
 using namespace ImGui;
