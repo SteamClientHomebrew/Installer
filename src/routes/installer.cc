@@ -170,7 +170,41 @@ cleanup:
     return success;
 }
 #else
-static bool VerifyDownloadSignature(const std::string&, const std::string&) { return true; }
+#include <openssl/evp.h>
+#include <cstdio>
+
+static bool VerifyDownloadSignature(const std::string& filePath, const std::string& expectedHex)
+{
+    FILE* f = fopen(filePath.c_str(), "rb");
+    if (!f) return false;
+
+    EVP_MD_CTX* ctx = EVP_MD_CTX_new();
+    if (!ctx) { fclose(f); return false; }
+
+    bool success = false;
+    if (EVP_DigestInit_ex(ctx, EVP_sha256(), nullptr)) {
+        unsigned char buf[65536];
+        size_t n;
+        bool ok = true;
+        while ((n = fread(buf, 1, sizeof(buf), f)) > 0) {
+            if (!EVP_DigestUpdate(ctx, buf, n)) { ok = false; break; }
+        }
+        if (ok && !ferror(f)) {
+            unsigned char hash[EVP_MAX_MD_SIZE];
+            unsigned int hashLen = 0;
+            if (EVP_DigestFinal_ex(ctx, hash, &hashLen)) {
+                char hexStr[65] = {};
+                for (unsigned int i = 0; i < hashLen; i++)
+                    snprintf(hexStr + i * 2, 3, "%02x", hash[i]);
+                success = (expectedHex == hexStr);
+            }
+        }
+    }
+
+    EVP_MD_CTX_free(ctx);
+    fclose(f);
+    return success;
+}
 #endif
 
 TaskScheduler::TaskResult DownloadReleaseAssets(std::unique_ptr<double>& progress, const nlohmann::json& releaseInfo, const nlohmann::json& osReleaseInfo)

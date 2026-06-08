@@ -112,6 +112,13 @@ void SetupImGuiScaling(GLFWwindow* window)
     ImFontConfig mem_cfg;
     mem_cfg.FontDataOwnedByAtlas = false;
 
+#ifdef _WIN32
+    constexpr static const auto fontPath = "C:/Windows/Fonts/seguiemj.ttf";
+    static ImFontConfig cfg;
+    cfg.MergeMode = true;
+    cfg.FontLoaderFlags |= ImGuiFreeTypeLoaderFlags_LoadColor;
+#endif
+
     // ── CJK embedded name-only fonts ─────────────────────────────────────────
     // Always merged: tiny subsets (~21 KB total) covering only the characters
     // used in language-selector display names (简体中文 繁體中文 日本語 한국어).
@@ -377,6 +384,7 @@ void SetupImGuiScaling(GLFWwindow* window)
 
     /** Explicitly set FreeType as the font loader to ensure color emoji support */
     io.Fonts->SetFontLoader(ImGuiFreeType::GetFontLoader());
+    io.Fonts->Build();
 
     io.DisplayFramebufferScale = ImVec2(scaleFactor, scaleFactor);
 

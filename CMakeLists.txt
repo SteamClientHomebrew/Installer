@@ -140,6 +140,7 @@ endif()
 
 if(UNIX AND NOT APPLE)
     find_package(GLEW REQUIRED)
+    find_package(OpenSSL REQUIRED)
     target_include_directories(${PROJECT_NAME}
         SYSTEM PRIVATE ${minizip_ng_SOURCE_DIR}
     )
@@ -150,6 +151,7 @@ if(UNIX AND NOT APPLE)
         GLEW::GLEW
         CURL::libcurl
         minizip
+        OpenSSL::Crypto
     )
 elseif(APPLE)
     find_library(COCOA_LIBRARY Cocoa REQUIRED)

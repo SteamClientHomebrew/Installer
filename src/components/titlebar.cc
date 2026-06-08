@@ -229,7 +229,3 @@ bool RenderTitleBarComponent(std::shared_ptr<RouterNav> router)
 
     return IsItemHovered() || (IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem) && IsMouseDown(ImGuiMouseButton_Left));
 }
-
-void RenderLanguageSelector(float xPos)
-{
-}

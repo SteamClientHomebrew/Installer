@@ -331,7 +331,7 @@ const void RenderInstallPrompt(std::shared_ptr<RouterNav> router, float xPos)
         PushStyleColor(ImGuiCol_Text, ImVec4(0.422f, 0.425f, 0.441f, 1.0f));
 
         std::string currentTag = selectedRelease.contains("tag_name") ? selectedRelease["tag_name"].get<std::string>() : std::string("(none)");
-        Text(Locale::Get("installVersion"), currentTag.c_str());
+        { char buf[512]; snprintf(buf, sizeof(buf), Locale::Get("installVersion"), currentTag.c_str()); Text("%s", buf); }
         SameLine(0, ScaleX(5));
 
         const char* changeText = Locale::Get("installChangeVersion");
@@ -406,10 +406,10 @@ const void RenderInstallPrompt(std::shared_ptr<RouterNav> router, float xPos)
         if (installSizeStr.empty()) {
             Text("%s", Locale::Get("installSizeNA"));
         } else {
-            Text(Locale::Get("installSizeMB"), stof(installSizeStr) / (1024.0f * 1024.0f));
+            { char buf[256]; snprintf(buf, sizeof(buf), Locale::Get("installSizeMB"), stof(installSizeStr) / (1024.0f * 1024.0f)); Text("%s", buf); }
         }
 
-        Text(Locale::Get("installDownloadMB"), osReleaseInfo.contains("size") ? osReleaseInfo["size"].get<float>() / (1024.0f * 1024.0f) : 0.0f);
+        { char buf[256]; snprintf(buf, sizeof(buf), Locale::Get("installDownloadMB"), osReleaseInfo.contains("size") ? osReleaseInfo["size"].get<float>() / (1024.0f * 1024.0f) : 0.0f); Text("%s", buf); }
 
         PopStyleColor();
     }

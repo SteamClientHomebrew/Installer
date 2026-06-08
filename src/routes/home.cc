@@ -173,9 +173,6 @@ const void RenderHome(std::shared_ptr<RouterNav> router, float xPos)
     const int ContainerSpacing = ScaleX(30);
     const int ContainerWidth = (viewport->Size.x - ScaleX(100)) / 2;
 
-    // Language selector is part of the home screen — slides with the panel.
-    RenderLanguageSelector(xPos);
-
     PushStyleColor(ImGuiCol_Border, ImVec4(0.169f, 0.173f, 0.18f, 1.0f));
 
     SetCursorPos({ xPos + (viewport->Size.x - ((ContainerWidth * 2) + ContainerSpacing)) / 2, ((viewport->Size.y - BottomNavBarHeight) / 2.0f) - ContainerHeight / 2.0f });
