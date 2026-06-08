@@ -36,6 +36,7 @@
 #include <i18n.h>
 #ifdef _WIN32
 #endif
+#include <format>
 #include <util.h>
 
 using namespace ImGui;

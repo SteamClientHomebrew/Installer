@@ -29,16 +29,20 @@
  */
 
 #pragma once
+#ifdef _WIN32
 #include <windows.h>
 #include <shobjidl.h>
 #include <tlhelp32.h>
+#include <cwchar>
+#include <cwctype>
+#endif
 #include <string>
 #include <iostream>
 #include <optional>
 #include <filesystem>
-#include <cwchar>
+#include <format>
+#include <sstream>
 #include "components.h"
-#include <cwctype>
 #include <vector>
 #include <system_error>
 
@@ -64,6 +68,7 @@ enum ColorScheme
     Light
 };
 
+#ifdef _WIN32
 static ColorScheme GetWindowsColorScheme()
 {
     HKEY key;
@@ -122,7 +127,6 @@ static std::string SanitizeDirectoryName(const std::string& path)
         pos = delimPos + 1;
     }
 
-    // Use WideCharToMultiByte for proper conversion
     if (result.empty()) {
         return {};
     }
@@ -150,8 +154,11 @@ static std::string GetSteamPath()
     }
 
     RegCloseKey(key);
-    return SanitizeDirectoryName(std::string(value, size - 1)); // Remove null terminator
+    return SanitizeDirectoryName(std::string(value, size - 1));
 }
+#else
+static std::string GetSteamPath() { return {}; }
+#endif
 
 static const void OpenUrl(const char* url)
 {
@@ -162,6 +169,7 @@ static const void OpenUrl(const char* url)
 #endif
 }
 
+#ifdef _WIN32
 static std::string OpenFolderDialog()
 {
     const auto WStringToString = [](const std::wstring& wstr) -> std::string
@@ -237,6 +245,9 @@ static std::optional<std::string> SelectNewSteamPath()
 
     return steamPath.string();
 }
+#else
+static std::optional<std::string> SelectNewSteamPath() { return {}; }
+#endif
 
 static std::string ToTimeAgo(const std::string& isoTimestamp)
 {
@@ -273,6 +284,7 @@ static std::string ToTimeAgo(const std::string& isoTimestamp)
     return std::format("about {} ago", formatTime(diff / 31536000, "year"));
 }
 
+#ifdef _WIN32
 static void StartSteamFromPath(std::string steamPath)
 {
     std::string steamExePath = (std::filesystem::path(steamPath) / "steam.exe").string();
@@ -415,3 +427,30 @@ static uint64_t GetFolderSize(const std::filesystem::path& path, std::error_code
 
     return total;
 }
+
+#else // !_WIN32
+
+static void StartSteamFromPath(std::string) {}
+static bool KillSteamProcess() { return false; }
+
+static uint64_t GetFolderSize(const std::filesystem::path& path, std::error_code& ec)
+{
+    ec.clear();
+    uint64_t total = 0;
+
+    if (!std::filesystem::exists(path, ec) || ec)
+        return 0;
+
+    if (std::filesystem::is_regular_file(path, ec))
+        return std::filesystem::file_size(path, ec);
+
+    for (const auto& entry : std::filesystem::recursive_directory_iterator(path, std::filesystem::directory_options::skip_permission_denied, ec)) {
+        if (entry.is_regular_file(ec))
+            total += entry.file_size(ec);
+        ec.clear();
+    }
+
+    return total;
+}
+
+#endif // _WIN32

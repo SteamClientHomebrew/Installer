@@ -37,6 +37,8 @@
 #include <math.h>
 #include <worker.h>
 #include <renderer.h>
+#include <cstdlib>
+#include <format>
 
 using namespace ImGui;
 
@@ -110,7 +112,7 @@ bool RenderTitleBarComponent(std::shared_ptr<RouterNav> router)
 
         if (IsItemClicked(ImGuiMouseButton_Left) && !IsWorkerBusy()) {
             JoinWorker();
-            ExitProcess(0);
+            std::exit(0);
         }
 
         if (isCloseButtonHovered) {

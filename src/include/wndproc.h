@@ -29,13 +29,17 @@
  */
 
 #pragma once
+#ifdef _WIN32
 #include <windows.h>
+#endif
 #include <GLFW/glfw3.h>
 #include <memory>
 #include <router.h>
 
 extern bool isTitleBarHovered;
 
+#ifdef _WIN32
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+#endif
 void SetBorderlessWindowStyle(GLFWwindow* window, std::shared_ptr<RouterNav> router);
 void SetWindowIcon(GLFWwindow* window);

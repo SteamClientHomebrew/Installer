@@ -267,9 +267,7 @@ const void RenderInstallPrompt(std::shared_ptr<RouterNav> router, float xPos)
 
         if (IsItemClicked()) {
             if (selectedRelease.contains("tag_name")) {
-                ShellExecuteA(NULL, "open",
-                              std::format("https://github.com/SteamClientHomebrew/Millennium/releases/tag/{}", selectedRelease["tag_name"].get<std::string>()).c_str(), NULL, NULL,
-                              SW_SHOWNORMAL);
+                OpenUrl(std::format("https://github.com/SteamClientHomebrew/Millennium/releases/tag/{}", selectedRelease["tag_name"].get<std::string>()).c_str());
             }
         }
 
