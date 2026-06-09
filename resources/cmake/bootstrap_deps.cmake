@@ -120,6 +120,19 @@ if(WIN32 AND EXISTS "${glew_SOURCE_DIR}/build/glew.rc")
     file(WRITE "${glew_SOURCE_DIR}/build/glew.rc" "// intentionally blank\n")
 endif()
 
+# glew-cmake 2.2.0 declares cmake_minimum_required(VERSION 2.8.12) which
+# CMake 4.x no longer accepts. Bump it to 3.5 in-place before the build.
+if(WIN32 AND EXISTS "${glew_SOURCE_DIR}/CMakeLists.txt")
+    file(READ "${glew_SOURCE_DIR}/CMakeLists.txt" _glew_content)
+    string(REGEX REPLACE
+        "cmake_minimum_required[ \t]*\\([ \t]*VERSION[ \t]+[0-9]+\\.[0-9]+(\\.[0-9]+)?[ \t]*\\)"
+        "cmake_minimum_required(VERSION 3.5)"
+        _glew_content "${_glew_content}"
+    )
+    file(WRITE "${glew_SOURCE_DIR}/CMakeLists.txt" "${_glew_content}")
+    unset(_glew_content)
+endif()
+
 # ============================================================================
 # Download deferred dependencies (SOURCE_SUBDIR fakedir = download only)
 # ============================================================================
