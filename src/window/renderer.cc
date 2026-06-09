@@ -384,7 +384,6 @@ void SetupImGuiScaling(GLFWwindow* window)
 
     /** Explicitly set FreeType as the font loader to ensure color emoji support */
     io.Fonts->SetFontLoader(ImGuiFreeType::GetFontLoader());
-    io.Fonts->Build();
 
     io.DisplayFramebufferScale = ImVec2(scaleFactor, scaleFactor);
 

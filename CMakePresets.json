@@ -1,105 +1,105 @@
 {
-  "version": 2,
-  "configurePresets": [
-    {
-      "name": "default",
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build",
-      "hidden": true,
-      "cacheVariables": {
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
-      }
-    },
-    {
-      "name": "windows",
-      "hidden": true,
-      "inherits": "default",
-      "generator": "Ninja",
-      "vendor": {
-        "microsoft.com/VisualStudioSettings/CMake/1.0": {
-          "hostOS": [
-            "Windows"
-          ]
+    "version": 2,
+    "configurePresets": [
+        {
+            "name": "default",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build",
+            "hidden": true,
+            "cacheVariables": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+            }
+        },
+        {
+            "name": "windows",
+            "hidden": true,
+            "inherits": "default",
+            "generator": "Ninja",
+            "vendor": {
+                "microsoft.com/VisualStudioSettings/CMake/1.0": {
+                    "hostOS": [
+                        "Windows"
+                    ]
+                }
+            },
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "clang-cl.exe",
+                "CMAKE_CXX_COMPILER": "clang-cl.exe",
+                "CMAKE_CXX_FLAGS": "/EHsc"
+            },
+            "displayName": "windows"
+        },
+        {
+            "inherits": "windows",
+            "name": "windows-release",
+            "displayName": "windows-release",
+            "description": "windows release build.",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_CXX_FLAGS_RELEASE": "/O1 /GL /GF /Gy /Zi /DNDEBUG",
+                "CMAKE_SHARED_LINKER_FLAGS_RELEASE": "/LTCG /OPT:REF /OPT:ICF /DEBUG:FULL"
+            }
+        },
+        {
+            "inherits": "windows",
+            "name": "windows-debug",
+            "displayName": "windows-debug",
+            "description": "windows debug build.",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_CXX_FLAGS_DEBUG": "/Z7 -fstandalone-debug",
+                "CMAKE_C_FLAGS_DEBUG": "/Z7 -fstandalone-debug"
+            }
+        },
+        {
+            "inherits": "default",
+            "name": "linux",
+            "hidden": true,
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "gcc",
+                "CMAKE_CXX_COMPILER": "g++"
+            },
+            "displayName": "linux"
+        },
+        {
+            "inherits": "linux",
+            "name": "linux-release",
+            "displayName": "linux-release",
+            "description": "Linux release build.",
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "inherits": "linux",
+            "name": "linux-debug",
+            "displayName": "linux-debug",
+            "description": "Linux debug build.",
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        },
+        {
+            "inherits": "default",
+            "name": "osx-release",
+            "displayName": "osx-release",
+            "description": "MacOS release build.",
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "inherits": "default",
+            "name": "osx-debug",
+            "displayName": "osx-debug",
+            "description": "MacOS debug build.",
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
         }
-      },
-      "cacheVariables": {
-        "CMAKE_C_COMPILER": "clang-cl.exe",
-        "CMAKE_CXX_COMPILER": "clang-cl.exe",
-        "CMAKE_CXX_FLAGS": "/EHsc"
-      },
-      "displayName": "windows"
-    },
-    {
-      "inherits": "windows",
-      "name": "windows-release",
-      "displayName": "windows-release",
-      "description": "windows release build.",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
-        "CMAKE_CXX_FLAGS_RELEASE": "/O1 /GL /GF /Gy /Zi /DNDEBUG",
-        "CMAKE_SHARED_LINKER_FLAGS_RELEASE": "/LTCG /OPT:REF /OPT:ICF /DEBUG:FULL"
-      }
-    },
-    {
-      "inherits": "windows",
-      "name": "windows-debug",
-      "displayName": "windows-debug",
-      "description": "windows debug build.",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_CXX_FLAGS_DEBUG": "/Z7 -fstandalone-debug",
-        "CMAKE_C_FLAGS_DEBUG": "/Z7 -fstandalone-debug"
-      }
-    },
-    {
-      "inherits": "default",
-      "name": "linux",
-      "hidden": true,
-      "cacheVariables": {
-        "CMAKE_C_COMPILER": "gcc",
-        "CMAKE_CXX_COMPILER": "g++"
-      },
-      "displayName": "linux"
-    },
-    {
-      "inherits": "linux",
-      "name": "linux-release",
-      "displayName": "linux-release",
-      "description": "Linux release build.",
-      "binaryDir": "${sourceDir}/build/linux-release",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release"
-      }
-    },
-    {
-      "inherits": "linux",
-      "name": "linux-debug",
-      "displayName": "linux-debug",
-      "description": "Linux debug build.",
-      "binaryDir": "${sourceDir}/build/linux-debug",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug"
-      }
-    },
-    {
-      "inherits": "default",
-      "name": "osx-release",
-      "displayName": "osx-release",
-      "description": "MacOS release build.",
-      "binaryDir": "${sourceDir}/build/osx-release",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release"
-      }
-    },
-    {
-      "inherits": "default",
-      "name": "osx-debug",
-      "displayName": "osx-debug",
-      "description": "MacOS debug build.",
-      "binaryDir": "${sourceDir}/build/osx-debug",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug"
-      }
-    }
-  ]
+    ]
 }
